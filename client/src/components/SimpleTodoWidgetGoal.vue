@@ -1,31 +1,35 @@
 <script setup lang="ts">
-import {ref, onUnmounted, onMounted, reactive, computed, onScopeDispose, watchEffect} from 'vue'
+import { ref, onUnmounted, onMounted, reactive, computed, onScopeDispose, watchEffect, customRef, type CustomRefFactory, type DeepReadonly, readonly, shallowReadonly, watch } from 'vue'
 // --- all that bellow can be a library
-import type {Ref} from 'vue'
-import type {Todo} from '@/database'
-import {database} from '@/database'
-import { liveQuery } from 'dexie';
-import type {Table} from 'dexie'
+import type { Ref } from 'vue'
+import type { Todo } from '@/database'
+import { database } from '@/database'
+import { liveQuery, type PromiseExtended } from 'dexie';
+import type { Table, Dexie, Subscription, Collection } from 'dexie'
 
-function somehowUseTodos(query = (table: Table) => table.toArray()) {
-    const tdr : Ref<Todo[]> = ref([])
-    const lq = liveQuery(() => query(database.todos))
-    
-    const subscription = lq.subscribe(next => {
-        tdr.value = next
+function dynamicQuery<T, P extends Ref[]>
+    (table: Table<T>, params: P, query: (table: Table<T>, params: P) => Collection<T>): Ref<T[]> {
+    let value: Ref<T[]> = ref([])
+    let sub: Subscription | null = null
+
+    function regen_sub () {
+        if (sub !== null) {
+            sub.unsubscribe();
+        }
+        sub = liveQuery<T[]>(() => query(table, params).toArray()).subscribe(newvalue => {
+            value.value = newvalue
+        })
+    }
+
+    watch(params, (new_values, old_values) => {
+        regen_sub();
     })
 
-    // which is better?
-    // onUnmounted(() => { subscription.unsubscribe() })
-    onScopeDispose(() => { subscription.unsubscribe() })
+    regen_sub()
 
-    return {
-        todos: tdr,
-        async add_todo(text: string) {
-            database.todos.add({done: false, text})
-        }
-    }
+    return value;
 }
+
 // ---
 // some thoughts to be written here
 //   reactive arguments to queries?
@@ -35,31 +39,20 @@ function somehowUseTodos(query = (table: Table) => table.toArray()) {
 //   pinia for global storage of those?
 //   
 
-const dummy = ref(0)
 const from = ref(0)
 const to = ref(100)
+const field = ref('id')
 
-const todos : Ref<Todo[]> = ref([])
-database.todos.hook("creating", () => {
-    console.log(
-        "Hook kreacji"
-    )
-    dummy.value = dummy.value + 1
-})
-watchEffect(() => {
-    const _ = dummy.value;
-    console.log("recomputing")
-    database.todos.where('id').between(from.value, to.value).toArray().then(value => {
-        todos.value = value
-    }).catch(reson => console.error(reson))
-})
+const todos = dynamicQuery(
+    database.todos, 
+    [field, from, to], 
+    (table, [field, from, to]) => table.where(field.value as string).between(from.value, to.value, true, true)
+)
 
-// const todos_db = somehowUseTodos();
 const text = ref("")
 
-async function onAddTodo () {
-    // await todos_db.add_todo(text.value);
-    await database.todos.add({done: false, text: text.value});
+async function onAddTodo() {
+    await database.todos.add({ done: false, text: text.value });
     text.value = ""
 }
 
@@ -68,12 +61,12 @@ async function onAddTodo () {
 <template>
     <h2>Todos:</h2>
     <div>
-        <input type="number" v-model="from">
-        <input type="number" v-model="to">
-        <input type="text" v-model="text">
+        <input type="number" v-model="from" />
+        <input type="number" v-model="to" />
+        <input type="text" v-model="text" />
         <button @click="onAddTodo">Add todo:</button>
         <div>
-            <div v-for="todo in todos" :key="todo.id">{{todo.id}} : {{todo.text}}</div>
+            <div v-for="todo in todos" :key="todo.id">{{ todo.id }} : {{ todo.text }}</div>
         </div>
     </div>
 </template>
