@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { onScopeDispose, onUnmounted, ref, watch } from 'vue'
 import type { Ref, UnwrapRef } from 'vue'
 import { database } from '@/database'
 import { liveQuery } from 'dexie';
@@ -22,6 +22,9 @@ function dynamicQuery<T, P extends readonly Ref[]>(
             value.value = newvalue
         })
     }
+    onUnmounted(() => {
+        sub?.unsubscribe();
+    })
     watch(params, (new_values, _) => {
         regen_sub(new_values as any);
     })
