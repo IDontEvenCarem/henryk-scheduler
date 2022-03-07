@@ -15,25 +15,24 @@ function dynamicQuery<T, P extends readonly Ref[]>(
     query: (table: Table<T>, ...params: Readonly<UnwrapedRefList<P>>) => Collection<T>)
     : Ref<T[]> 
 {
+    // escape hatching is needed, as there is no way to encode the change of types
+    // caused by map'ing over a tuple into the type system
+    
     let value: Ref<T[]> = ref([])
-    let sub: Subscription | null = null
+    let sub: Subscription | undefined = undefined
 
-    function regen_sub () {
-        if (sub !== null) {
-            sub.unsubscribe();
-        }
-        // escape hatching bellow seems to be needed
-        const parameter_values = params.map(ref => ref.value) as any
-        sub = liveQuery<T[]>(() => query(table, ...parameter_values).toArray()).subscribe(newvalue => {
+    function regen_sub (newvalues: Readonly<UnwrapedRefList<P>>) {
+        sub?.unsubscribe();
+        sub = liveQuery<T[]>(() => query(table, ...newvalues).toArray()).subscribe(newvalue => {
             value.value = newvalue
         })
     }
 
-    watch(params, (new_values, old_values) => {
-        regen_sub();
+    watch(params, (new_values, _) => {
+        regen_sub(new_values as any);
     })
 
-    regen_sub()
+    regen_sub(params.map(ref => ref.value) as any)
 
     return value;
 }
