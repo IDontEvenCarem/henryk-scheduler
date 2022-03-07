@@ -1,57 +1,40 @@
 <script setup lang="ts">
-import { ref, onUnmounted, onMounted, reactive, computed, onScopeDispose, watchEffect, customRef, type CustomRefFactory, type DeepReadonly, readonly, shallowReadonly, watch } from 'vue'
-// --- all that bellow can be a library
+import { ref, watch } from 'vue'
 import type { Ref, UnwrapRef } from 'vue'
-import type { Todo } from '@/database'
 import { database } from '@/database'
-import { liveQuery, type PromiseExtended } from 'dexie';
-import type { Table, Dexie, Subscription, Collection } from 'dexie'
+import { liveQuery } from 'dexie';
+import type { Table, Subscription, Collection } from 'dexie'
 
 type UnwrapedRefList<T> = { [P in keyof T]: UnwrapRef<T[P]> }
 
 function dynamicQuery<T, P extends readonly Ref[]>(
-    table: Table<T>, 
-    params: [...P], 
-    query: (table: Table<T>, ...params: Readonly<UnwrapedRefList<P>>) => Collection<T>)
-    : Ref<T[]> 
-{
+    table: Table<T>,
+    params: [...P],
+    query: (table: Table<T>, ...params: Readonly<UnwrapedRefList<P>>) => Collection<T>
+): Ref<T[]> {
     // escape hatching is needed, as there is no way to encode the change of types
     // caused by map'ing over a tuple into the type system
-    
     let value: Ref<T[]> = ref([])
     let sub: Subscription | undefined = undefined
-
-    function regen_sub (newvalues: Readonly<UnwrapedRefList<P>>) {
+    function regen_sub(newvalues: Readonly<UnwrapedRefList<P>>) {
         sub?.unsubscribe();
         sub = liveQuery<T[]>(() => query(table, ...newvalues).toArray()).subscribe(newvalue => {
             value.value = newvalue
         })
     }
-
     watch(params, (new_values, _) => {
         regen_sub(new_values as any);
     })
-
     regen_sub(params.map(ref => ref.value) as any)
-
     return value;
 }
-
-// ---
-// some thoughts to be written here
-//   reactive arguments to queries?
-//   how would we make a smarter selector for that?
-//   db interface = db + getters + mutators
-//   there are going to be multiple of those
-//   pinia for global storage of those?
-//   
 
 const from = ref(0)
 const to = ref(100)
 const field = ref('id')
 
 const todos = dynamicQuery(
-    database.todos, 
+    database.todos,
     [field, from, to],
     (table, field, from, to) => table
         .where(field)
