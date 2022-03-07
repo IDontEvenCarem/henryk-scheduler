@@ -11,7 +11,7 @@ type UnwrapedRefList<T> = { [P in keyof T]: UnwrapRef<T[P]> }
 
 function dynamicQuery<T, P extends readonly Ref[]>(
     table: Table<T>, 
-    params: P, 
+    params: [...P], 
     query: (table: Table<T>, ...params: Readonly<UnwrapedRefList<P>>) => Collection<T>)
     : Ref<T[]> 
 {
@@ -23,7 +23,7 @@ function dynamicQuery<T, P extends readonly Ref[]>(
             sub.unsubscribe();
         }
         // escape hatching bellow seems to be needed
-        const parameter_values = params.map(ref => ref.value) as any 
+        const parameter_values = params.map(ref => ref.value) as any
         sub = liveQuery<T[]>(() => query(table, ...parameter_values).toArray()).subscribe(newvalue => {
             value.value = newvalue
         })
@@ -53,7 +53,7 @@ const field = ref('id')
 
 const todos = dynamicQuery(
     database.todos, 
-    [field, from, to] as const, 
+    [field, from, to],
     (table, field, from, to) => table
         .where(field)
         .between(from, to, true, true)
