@@ -1,14 +1,20 @@
 <script setup lang="ts">
 import { ref, onUnmounted, onMounted, reactive, computed, onScopeDispose, watchEffect, customRef, type CustomRefFactory, type DeepReadonly, readonly, shallowReadonly, watch } from 'vue'
 // --- all that bellow can be a library
-import type { Ref } from 'vue'
+import type { Ref, UnwrapRef } from 'vue'
 import type { Todo } from '@/database'
 import { database } from '@/database'
 import { liveQuery, type PromiseExtended } from 'dexie';
 import type { Table, Dexie, Subscription, Collection } from 'dexie'
 
-function dynamicQuery<T, P extends Ref[]>
-    (table: Table<T>, params: P, query: (table: Table<T>, params: P) => Collection<T>): Ref<T[]> {
+type UnwrapedRefList<T> = { [P in keyof T]: UnwrapRef<T[P]> }
+
+function dynamicQuery<T, P extends readonly Ref[]>(
+    table: Table<T>, 
+    params: P, 
+    query: (table: Table<T>, ...params: Readonly<UnwrapedRefList<P>>) => Collection<T>)
+    : Ref<T[]> 
+{
     let value: Ref<T[]> = ref([])
     let sub: Subscription | null = null
 
@@ -16,7 +22,9 @@ function dynamicQuery<T, P extends Ref[]>
         if (sub !== null) {
             sub.unsubscribe();
         }
-        sub = liveQuery<T[]>(() => query(table, params).toArray()).subscribe(newvalue => {
+        // escape hatching bellow seems to be needed
+        const parameter_values = params.map(ref => ref.value) as any 
+        sub = liveQuery<T[]>(() => query(table, ...parameter_values).toArray()).subscribe(newvalue => {
             value.value = newvalue
         })
     }
@@ -45,8 +53,10 @@ const field = ref('id')
 
 const todos = dynamicQuery(
     database.todos, 
-    [field, from, to], 
-    (table, [field, from, to]) => table.where(field.value as string).between(from.value, to.value, true, true)
+    [field, from, to] as const, 
+    (table, field, from, to) => table
+        .where(field)
+        .between(from, to, true, true)
 )
 
 const text = ref("")
