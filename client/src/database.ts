@@ -53,3 +53,19 @@ export class TypedDexie extends Dexie {
 
 
 export const database = new TypedDexie()
+
+export async function AddTodo (text: string) {
+    return await database.todos.add({text, done: false})
+}
+
+export async function MarkTodoDone (id: number) {
+    return await database.todos.update(id, {done: true})
+}
+
+export async function MarkTodoUndone (id: number) {
+    return await database.todos.update(id, {done: false})
+}
+
+export async function DeleteTodo (id: number) {
+    await database.todos.delete(id);
+}
