@@ -13,7 +13,8 @@ import HelloWorld from '@/components/HelloWorld.vue'
     </div>
   </header>
 
-  <RouterView />
+  <RouterView>
+  </RouterView>
 </template>
 
 <style>
@@ -26,4 +27,5 @@ a {
 body {
   margin: 3ch 4ch;
 }
+
 </style>

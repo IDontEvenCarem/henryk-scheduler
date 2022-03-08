@@ -1,47 +1,20 @@
 <script setup lang="ts">
-import { onScopeDispose, onUnmounted, ref, watch } from 'vue'
-import type { Ref, UnwrapRef } from 'vue'
-import { database } from '@/database'
-import { liveQuery } from 'dexie';
-import type { Table, Subscription, Collection } from 'dexie'
-
-type UnwrapedRefList<T> = { [P in keyof T]: UnwrapRef<T[P]> }
-
-function dynamicQuery<T, P extends readonly Ref[]>(
-    table: Table<T>,
-    params: [...P],
-    query: (table: Table<T>, ...params: Readonly<UnwrapedRefList<P>>) => Collection<T>
-): Ref<T[]> {
-    // escape hatching is needed, as there is no way to encode the change of types
-    // caused by map'ing over a tuple into the type system
-    let value: Ref<T[]> = ref([])
-    let sub: Subscription | undefined = undefined
-    function regen_sub(newvalues: Readonly<UnwrapedRefList<P>>) {
-        sub?.unsubscribe();
-        sub = liveQuery<T[]>(() => query(table, ...newvalues).toArray()).subscribe(newvalue => {
-            value.value = newvalue
-        })
-    }
-    onUnmounted(() => {
-        sub?.unsubscribe();
-    })
-    watch(params, (new_values, _) => {
-        regen_sub(new_values as any);
-    })
-    regen_sub(params.map(ref => ref.value) as any)
-    return value;
-}
+import {ref, type Ref} from 'vue'
+import {database, dynamicQuery, MarkTodoDone, MarkTodoUndone, DeleteTodo} from '@/dbintegration'
+import type { Todo } from '@/stores/Todos';
+import { assert } from '@vue/compiler-core';
 
 const from = ref(0)
 const to = ref(100)
-const field = ref('id')
+const done : Ref<"yes"|"no"|"null"> = ref("null")
 
 const todos = dynamicQuery(
     database.todos,
-    [field, from, to],
-    (table, field, from, to) => table
-        .where(field)
+    [from, to, done],
+    (table, from, to, done) => table
+        .where('id')
         .between(from, to, true, true)
+        .filter(todo => done == 'null' || (todo.done && done == 'yes') || (!todo.done && done == 'no'))
 )
 
 const text = ref("")
@@ -51,17 +24,76 @@ async function onAddTodo() {
     text.value = ""
 }
 
+function onToggleTodo (todo: Todo) {
+    if (todo.id === undefined) return;
+    if (todo.done) {
+        MarkTodoUndone(todo.id)
+    } else {
+        MarkTodoDone(todo.id)
+    }
+}
+
+function onDeleteTodo (todo: Todo) {
+    if (todo.id === undefined) return;
+    DeleteTodo(todo.id);
+}
+
 </script>
 
 <template>
-    <h2>Todos:</h2>
-    <div>
-        <input type="number" v-model="from" />
-        <input type="number" v-model="to" />
+    <div class="todo-app-element-wrapper">
+        <h2>Todos:</h2>
+        <div class="settings">
+            <label>Od:</label>
+            <input type="number" v-model="from" />
+            <label>Do:</label>
+            <input type="number" v-model="to" />
+            <label>Zrobione:</label>
+            <select v-model="done">
+                <option value="yes">Tak</option>
+                <option value="no">Nie</option>
+                <option value="null">Oba</option>
+            </select>
+        </div>
         <input type="text" v-model="text" />
         <button @click="onAddTodo">Add todo:</button>
-        <div>
-            <div v-for="todo in todos" :key="todo.id">{{ todo.id }} : {{ todo.text }}</div>
+        <div class="todo-wrapper">
+            <div class="todo-element" :class="{'todo-done' : todo.done}" v-for="todo in todos" :key="todo.id">
+                <input type="checkbox" :checked="todo.done" @change="onToggleTodo(todo)">
+                {{ todo.text }}
+                <p @click="onDeleteTodo(todo)" class="thrashcan">🗑️</p>
+            </div>
         </div>
     </div>
 </template>
+
+<style scoped>
+.todo-app-element-wrapper {
+    margin: 1ch;
+}
+
+.settings {
+    display: grid;
+    grid-template-columns: auto auto;
+}
+
+.todo-element {
+    margin: 5px;
+    padding: 5px;
+    background-color: lightcoral;
+    color: black;
+    border-radius: 5px;
+    font-size: 1.1rem;
+    transition: background-color 100ms ease;
+    display: grid;
+    grid-template-columns: min-content auto min-content;
+}
+
+.todo-done {
+    background-color: lightgreen;
+}
+
+.thrashcan {
+    cursor: pointer;
+}
+</style>
