@@ -1,16 +1,23 @@
-const fastify = require('fastify')({logger: true})
+const express = require('express')
+const app = express()
+const port = 2999
 
-fastify.get('/', async (request, response) => {
-    return { hello: 'world'}
+app.get('/', (req, res) => {
+    res.send('Hello World!')
 })
 
-const start = async () => {
-    try {
-        await fastify.listen(2999)
-    } catch (err) {
-        fastify.log.error(err)
-        process.exit(1)
-    }
-}
+app.get('/test', (req, res) => {
+    res.send(req.query['a'] || 'none')
+})
 
-start()
+app.get('/test2', (req, res) => {
+    if (Math.random() > 0.3)
+        res.send("wiecej")
+    else
+        res.send("mniej")
+})
+
+
+app.listen(port, () => {
+    console.log(`Example app listening on port ${port}`)
+})
