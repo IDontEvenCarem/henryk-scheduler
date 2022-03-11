@@ -1,13 +1,13 @@
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue'
 
 const login = ref('')
 const password = ref('')
 
 function OnLogin()
-  {
+{
     alert(login.value + ' ' + password.value)
-  }
+}
 </script>
 
 <template>
