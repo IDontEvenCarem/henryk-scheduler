@@ -9,6 +9,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "fastify": "^3.27.2"
+    "argon2": "^0.28.5",
+    "express": "^4.17.3",
+    "jose": "^4.6.0"
   }
 }
