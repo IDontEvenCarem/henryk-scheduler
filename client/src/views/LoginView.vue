@@ -1,12 +1,22 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import {useUserStore} from '@/stores/User'
 
+const store = useUserStore()
 const login = ref('')
 const password = ref('')
+const buttonDisabled = ref(false)
 
-function OnLogin()
+async function OnLogin()
 {
-    alert(login.value + ' ' + password.value)
+	buttonDisabled.value = true
+	try {
+		await store.login(login.value, password.value)
+		alert("Login successful")
+	} catch (err) {
+		alert(err)
+	}
+	buttonDisabled.value = false
 }
 </script>
 
@@ -24,7 +34,7 @@ function OnLogin()
       <input type="password" v-model="password">
       <br>
 
-      <button v-on:click="OnLogin">
+      <button v-on:click="OnLogin" v-bind:disabled="buttonDisabled">
         Log in
       </button>
     </div>

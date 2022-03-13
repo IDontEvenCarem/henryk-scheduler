@@ -1,5 +1,12 @@
 <script lang="ts" setup>
 import {RouterLink} from 'vue-router'
+import {useUserStore} from '@/stores/User'
+import { onMounted } from 'vue';
+
+const user = useUserStore();
+onMounted(() => {
+    user.maybeInitialize();
+})
 
 </script>
 
@@ -10,6 +17,9 @@ import {RouterLink} from 'vue-router'
             <RouterLink to="/about">About</RouterLink>
             <RouterLink to="/todos">Todos</RouterLink>
             <RouterLink to="/login">Log in</RouterLink>
+            <div v-if="user.loggedIn">
+                Logged in as {{user.username}}
+            </div>
         </nav>
 
         <main>

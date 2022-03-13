@@ -1,12 +1,15 @@
 const express = require('express')
 const jose = require('jose')
 const argon = require('argon2')
-const e = require('express')
+const multer = require('multer')
 
 async function main() {
     const app = express()
+    const upload = multer()
     const port = 2999
     app.use(express.urlencoded({ extended: false }))
+    app.use(express.json())
+    app.use(upload.none())
 
     const { publicKey, privateKey } = await jose.generateKeyPair('PS256')
     console.log(publicKey)
@@ -22,16 +25,18 @@ async function main() {
         res.send('Hello World!')
     })
 
-    app.get('/jwtpublickey', (req, res) => {
-        res.send(publicKey.export({ format: 'jwk' }))
+    app.get('/jwtpublickey', async (req, res) => {
+        // res.send(await jose.exportJWK(publicKey))
+        res.send(await jose.exportSPKI(publicKey))
     })
 
     app.post('/login', async (req, res) => {
         try {
             const { username, password } = req.body
-            if (!(username && password))
+            if (!(username && password)) {
                 res.status(400).send("All input is required")
-            if (Database.has(username)) {
+            } 
+            else if (Database.has(username)) {
                 if (await argon.verify(Database.get(username), password)) {
                     const jwt = await new jose.SignJWT({ username })
                         .setProtectedHeader({ alg: 'PS256' })
