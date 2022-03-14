@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { jwtVerify, decodeJwt, importSPKI } from 'jose'
 
-const baseUrl = import.meta.env.DEV ? 'http://localhost:2999' : '/api/login';
+const baseUrl = import.meta.env.DEV ? 'http://localhost:2999' : 'https://dev-henryk.idecm.win/';
 
 export const useUserStore = defineStore({
     id: "user-store",
