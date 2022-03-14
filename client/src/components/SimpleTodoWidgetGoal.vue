@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import {ref, type Ref} from 'vue'
 import {database, dynamicQuery, MarkTodoDone, MarkTodoUndone, DeleteTodo} from '@/dbintegration'
-import type { Todo } from '@/stores/Todos';
-import { assert } from '@vue/compiler-core';
+import type { Todo } from '@/database';
 
 const from = ref(0)
 const to = ref(100)
