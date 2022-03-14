@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import SimpleTodoWidgetGoal from "../components/SimpleTodoWidgetGoal.vue";
-import SimpleTodoWidgetPinia from "../components/SimpleTodoWidgetPinia.vue";
 import StandardPageWrapper from "../components/StandardPageWrapper.vue";
 </script>
 
