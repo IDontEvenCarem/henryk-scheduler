@@ -21,7 +21,9 @@ export const useUserStore = defineStore({
     },
     actions: {
         async login (username: string, password: string) {
-            return fetch(new URL('/login', baseUrl).toString(), {
+            return fetch(
+                    new URL('/login', baseUrl).toString(), 
+                {
                 method: "POST",
                 body: JSON.stringify({username, password}),
                 headers: {
@@ -38,6 +40,23 @@ export const useUserStore = defineStore({
             .then(text => {
                 this.token = text;
                 localStorage.setItem('loginToken', text)
+            })
+        },
+        async register(username: string, password: string) {
+            return fetch(new URL('/register', baseUrl).toString(), {
+                method: 'POST',
+                body: JSON.stringify({username, password}),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }).then(res => {
+                if (res.ok) {
+                    return res.text()
+                } else {
+                    return Promise.reject("Could not register")
+                }
+            }).then(text => {
+                return text == "user created"
             })
         },
         logOut () {

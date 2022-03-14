@@ -7,15 +7,25 @@ const store = useUserStore()
 const router = useRouter()
 const login = ref('')
 const password = ref('')
+const passwordRepeat = ref('')
 const buttonDisabled = ref(false)
 
-async function OnLogin()
+
+async function OnRegister()
 {
+  if (password.value != passwordRepeat.value) {
+    alert("Passwords do not match!")
+    return;
+  }
+
 	buttonDisabled.value = true
 	try {
-		await store.login(login.value, password.value)
-		alert("Login successful")
-    router.go(-1)
+		if(await store.register(login.value, password.value)) {
+      alert("Registration successful, please log in now")
+      router.replace("/login");
+    } else {
+      alert("Could not register with the given credentials")
+    }
 	} catch (err) {
 		alert(err)
 	}
@@ -32,13 +42,17 @@ async function OnLogin()
     <div class="center"> 
       <p>Login</p>
       <input v-model="login">
-      <p>Password</p>
 
+      <p>Password</p>
       <input type="password" v-model="password">
       <br>
+      
+      <p>Repeat Password</p>
+      <input type="password" v-model="passwordRepeat">
+      <br>
 
-      <button v-on:click="OnLogin" v-bind:disabled="buttonDisabled">
-        Log in
+      <button v-on:click="OnRegister" v-bind:disabled="buttonDisabled">
+        Register
       </button>
     </div>
   </div>
@@ -55,7 +69,7 @@ async function OnLogin()
   .wrapper{
     /*background-color:lightgray;*/
     /*background: linear-gradient(0.15turn, #e66465, #9198e5);*/ /*We can use it*/
-    background: linear-gradient(0.15turn, #2762c2, #55b350);
+    background: linear-gradient(0.65turn, #2762c2, #55b350);
     min-height:100vh;
   }
 </style>
