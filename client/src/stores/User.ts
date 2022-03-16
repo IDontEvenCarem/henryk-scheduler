@@ -1,8 +1,6 @@
 import { defineStore } from "pinia";
 import { jwtVerify, decodeJwt, importSPKI } from 'jose'
 
-const baseUrl = import.meta.env.DEV ? 'http://localhost:2999' : 'https://dev-henryk.idecm.win/api';
-
 export const useUserStore = defineStore({
     id: "user-store",
     state: () => {
@@ -21,13 +19,12 @@ export const useUserStore = defineStore({
     },
     actions: {
         async login (username: string, password: string) {
-            return fetch(
-                    baseUrl+'/login', 
+            return fetch('/api/login', 
                 {
-                method: "POST",
-                body: JSON.stringify({username, password}),
-                headers: {
-                    'Content-Type': 'application/json'
+                    method: "POST",
+                    body: JSON.stringify({username, password}),
+                    headers: {
+                        'Content-Type': 'application/json'
                 }
             })
             .then(res => {
@@ -43,7 +40,7 @@ export const useUserStore = defineStore({
             })
         },
         async register(username: string, password: string) {
-            return fetch(baseUrl+'/register', {
+            return fetch('/api/register', {
                 method: 'POST',
                 body: JSON.stringify({username, password}),
                 headers: {
@@ -68,7 +65,7 @@ export const useUserStore = defineStore({
             this.initialized = true;
             const savedToken = localStorage.getItem('loginToken')
             if (savedToken) {
-                fetch(baseUrl + "/jwtpublickey")
+                fetch("/api/jwtpublickey")
                 .then(res => res.text())
                 .then(text => importSPKI(text, 'PS256'))
                 .then(pubkey => jwtVerify(savedToken, pubkey)
