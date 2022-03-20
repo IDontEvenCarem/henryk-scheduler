@@ -1,10 +1,11 @@
 <script lang="ts" setup>
 import StandardPageWrapper from "../components/StandardPageWrapper.vue";
+import Calendar from "@/components/Calendar.vue";
 
 </script>
 
 <template>
 	<StandardPageWrapper>
-		<h1>Here will be a calendar view</h1>
+		<Calendar> </Calendar>
 	</StandardPageWrapper>
 </template>

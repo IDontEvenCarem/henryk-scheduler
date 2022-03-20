@@ -20,6 +20,7 @@ function OnLogout() {
             <RouterLink to="/">Home</RouterLink>
             <RouterLink to="/about">About</RouterLink>
             <RouterLink to="/todos">Todos</RouterLink>
+            <RouterLink to="/calendar">Calendar</RouterLink>
             <div v-if="user.loggedIn">
                 Logged in as {{user.username}}
                 <a @click="OnLogout" href="#">Log out</a>

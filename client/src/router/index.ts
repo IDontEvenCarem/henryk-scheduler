@@ -32,6 +32,11 @@ const router = createRouter({
       path: '/todos',
       name: 'todo',
       component: TodosViewVue
+    },
+    {
+      path: '/calendar',
+      name: 'calendar',
+      component: () => import('@/views/CalendarView.vue')
     }
     // {
     //   path: '/about',
