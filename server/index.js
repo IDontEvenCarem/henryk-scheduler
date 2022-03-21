@@ -11,8 +11,8 @@ async function main() {
     const db = await client.db("henryk_scheduler")
     const users_col = db.collection('users')
 
-    async function save_user (username, password) {
-        if (await users_col.countDocuments({username}) != 0) {
+    async function save_user(username, password) {
+        if (await users_col.countDocuments({ username }) != 0) {
             throw Error("User already registered with that name")
         }
 
@@ -22,8 +22,8 @@ async function main() {
         })
     }
 
-    function password_of (username) {
-        return users_col.findOne({username}).then(value => value && value.password)
+    function password_of(username) {
+        return users_col.findOne({ username }).then(value => value && value.password)
     }
 
     const app = express()
@@ -47,11 +47,11 @@ async function main() {
         try {
             const { username, password } = req.body
             if (!(username && password)) {
-                res.status(400).send("All input is required")
+                res.status(400).json({ error: "All input is required" })
             }
             const passhash = await password_of(username)
             if (!passhash) {
-                res.status(400).send("wrong credentials")
+                res.status(400).json({ error: "Wrong credentials" })
                 return;
             }
 
@@ -63,27 +63,27 @@ async function main() {
                     .sign(privateKey)
 
                 console.log(jwt)
-                res.send(jwt)
+                res.json({ message: jwt })
             }
             else {
-                res.status(400).send('not ok')
+                res.status(400).json({ error: "Wrong credentials" })
             }
         } catch (err) {
-            res.status(500).send("error")
+            res.status(500).json({ error: "Login error" })
             console.log(err)
         }
     })
     app.post('/register', async (req, res) => {
         try {
             if (!(req.body.username && req.body.password)) {
-                res.status(400).send("All input is required")
+                res.status(400).json({ error: "All input is required" })
                 return
             }
             await save_user(req.body.username, req.body.password);
-            res.status(200).send('user created')
+            res.status(200).json({ message: "User created." })
         } catch (err) {
             console.log(err)
-            res.status(500).send('fail')
+            res.status(500).json({ error: "Registration fail" })
         }
     })
 
