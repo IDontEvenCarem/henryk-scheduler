@@ -31,7 +31,9 @@ export interface RepeatingEvent {
 export interface Note {
     id?: number,
     title: string,
-    content: string
+    content: string,
+    createdAt: string,
+    editedAt: string
 }
 
 export class TypedDexie extends Dexie {
@@ -42,7 +44,7 @@ export class TypedDexie extends Dexie {
 
     constructor() {
         super('testdexie')
-        this.version(4).stores({
+        this.version(5).stores({
             todos: '++id',
             timetable: '++id, time_start, time_end',
             timetable_repeating: '++id, weekday',
@@ -84,4 +86,9 @@ export async function DeleteRepeatingEvent (id: number) {
 
 export async function DeleteAllRepeatingEvents () {
     return database.timetable_repeating.clear()
+}
+
+export async function AddNote (title: string, content: string) {
+    const now = (new Date()).toUTCString()
+    return database.notes.add({title, content, createdAt: now, editedAt: now})
 }

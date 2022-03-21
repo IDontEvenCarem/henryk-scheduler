@@ -8,16 +8,16 @@ import CalendarModal from './CalendarModal.vue'
 const events = dynamicQuery(database.timetable_repeating, [], table => table.toCollection())
 const modalOpen = ref(false)
 
-
 function computeStyle(event: RepeatingEvent) {
 	const beginOffsetTime = 8 * 60; // calendar starts at 8:00
 	const relStart = Math.round((event.time_start - beginOffsetTime)/7.5) + 1
 	const relEnd = Math.round((event.time_end - beginOffsetTime)/7.5) + 1
 
 	const obj = {
-		"gridColumn": `${event.weekday} / span 1`,
-		"gridRow": `${relStart} / span ${relEnd - relStart}`,
-		"backgroundColor": event.color
+		"--weekday": event.weekday,
+		"--timestart": relStart,
+		"--timeend": relEnd,
+		"--color": event.color
 	}
 
 	return obj
@@ -64,13 +64,13 @@ function addNewEvent(event: RepeatingEvent) {
 				<li>Sunday</li>
 			</ul>
 			<ul class="DayNumbers">
-				<li>20</li>
 				<li>21</li>
 				<li>22</li>
 				<li>23</li>
 				<li>24</li>
 				<li>25</li>
 				<li>26</li>
+				<li>27</li>
 			</ul>
 		</div>
 
@@ -97,11 +97,11 @@ function addNewEvent(event: RepeatingEvent) {
 				<div id="day-3"></div>
 				<div id="day-4"></div>
 				<div id="day-5"></div>
-				<div id="day-6"></div>
 				<div id="day-7"></div>
+				<div id="day-6"></div>
 			</div>
 
-			<div v-for="event in events" :style="computeStyle(event)" :key="event.id" class="EventSlot">
+			<div v-for="event in events" :style="(computeStyle(event) as any)" :key="event.id" class="EventSlot">
 				<div class="EventStatus">
 					<strong>{{ event.name }}</strong>
 					<br>
@@ -185,10 +185,12 @@ ul {
 	color: black;
 	border-color: black;
 	outline: none;
+	grid-column: var(--weekday) / span 1;
+	grid-row: var(--timestart) / var(--timeend);
+	background-color: var(--color);
 }
 .EventStatus {
 	padding: 5px;
-	border-radius: 5px;
 }
 .Lines {
 	display: contents;
