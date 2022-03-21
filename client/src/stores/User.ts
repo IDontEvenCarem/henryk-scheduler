@@ -68,13 +68,12 @@ export const useUserStore = defineStore({
                 fetch("/api/jwtpublickey")
                 .then(res => res.text())
                 .then(text => importSPKI(text, 'PS256'))
-                .then(pubkey => jwtVerify(savedToken, pubkey)
-                    .catch(err => alert("You were logged out, as the authorization server has been updated"))
-                )
+                .then(pubkey => jwtVerify(savedToken, pubkey))
                 .then(res => {
                     this.token = savedToken
                     console.log(res)
                 })
+                .catch(err => alert("You were logged out, as the authorization server has been updated"))
             }
         }
     }

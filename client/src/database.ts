@@ -54,6 +54,10 @@ export class TypedDexie extends Dexie {
 
 export const database = new TypedDexie()
 
+export async function Insert<T>(table: Table<T>, value: T) {
+    return table.add(value)
+}
+
 export async function AddTodo (text: string) {
     return await database.todos.add({text, done: false})
 }

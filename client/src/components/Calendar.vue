@@ -3,41 +3,52 @@ import { ref } from 'vue'
 import { dynamicQuery, database } from '@/dbintegration'
 import type { RepeatingEvent } from '@/database'
 import { AddRepeatingEvent, DeleteRepeatingEvent, DeleteAllRepeatingEvents } from '@/database'
+import CalendarModal from './CalendarModal.vue'
 
 const events = dynamicQuery(database.timetable_repeating, [], table => table.toCollection())
+const modalOpen = ref(false)
+
 
 function computeStyle(event: RepeatingEvent) {
-	const durationSlots = Math.ceil((event.time_end - event.time_start));
-	const startSlots = Math.floor(event.time_start) + 1;
+	const beginOffsetTime = 8 * 60; // calendar starts at 8:00
+	const relStart = Math.round((event.time_start - beginOffsetTime)/7.5) + 1
+	const relEnd = Math.round((event.time_end - beginOffsetTime)/7.5) + 1
 
 	const obj = {
 		"gridColumn": `${event.weekday} / span 1`,
-		"gridRow": `${startSlots} / span ${durationSlots}`,
+		"gridRow": `${relStart} / span ${relEnd - relStart}`,
 		"backgroundColor": event.color
 	}
-
-	console.log(obj)
 
 	return obj
 }
 
 function createRandomEvent() {
-	const time_start = Math.floor(Math.random() * 40)
-	const time_end = time_start + Math.floor(Math.random() * 7) + 1
+	const time_start = 8*60 + Math.floor(Math.random() * 60 * 3)
+	const time_end = time_start + Math.floor(Math.random() * 6) * 15
 	AddRepeatingEvent("losowy event", "blue", Math.floor(Math.random() * 7) + 1, time_start, time_end)
 }
 
 function deleteCalendarEvent(event: RepeatingEvent) {
-	DeleteRepeatingEvent(event.id)
+	if (event.id) {
+		DeleteRepeatingEvent(event.id)
+	}
 }
 
 function deleteAll() {
 	DeleteAllRepeatingEvents()
 }
 
+function addNewEvent(event: RepeatingEvent) {
+	AddRepeatingEvent(event.name, event.color, event.weekday, event.time_start, event.time_end)
+	modalOpen.value = false
+}
+
 </script>
 
 <template>
+	<CalendarModal :is-open="modalOpen" @modalClose="modalOpen=false" @modal-ok="addNewEvent"></CalendarModal>
+	<button @click="modalOpen=true">Add New Event</button>
 	<button @click="createRandomEvent">Dodaj w losowym czasie</button>
 	<button @click="deleteAll">🗑️ Delete everything</button>
 	<!-- <p v-for="event in events">{{JSON.stringify(event)}}</p> -->
@@ -90,10 +101,10 @@ function deleteAll() {
 				<div id="day-7"></div>
 			</div>
 
-			<div v-for="event in events" :style="computeStyle(event)" :key="event.id">
+			<div v-for="event in events" :style="computeStyle(event)" :key="event.id" class="EventSlot">
 				<div class="EventStatus">
 					<strong>{{ event.name }}</strong>
-
+					<br>
 					<button v-on:click="() => deleteCalendarEvent(event)">🗑️ Delete</button>
 				</div>
 			</div>
@@ -164,27 +175,27 @@ ul {
  {
 	display: grid;
 	grid-template-columns: repeat(7, 1fr);
-	grid-template-rows: repeat(44, 3vh);
+	grid-template-rows: [top] repeat(44, 3vh) [bottom];
 	grid-area: TimeSlotsMain;
 	/* position: relative; */
 }
 .EventSlot /* wyglad eventu */
  {
-	/* position: absolute; */
-	background: orange;
 	border-radius: 5px;
-	/* z-index: 2; */
 	color: black;
-	font-size: 12px;
 	border-color: black;
 	outline: none;
+}
+.EventStatus {
+	padding: 5px;
+	border-radius: 5px;
 }
 .Lines {
 	display: contents;
 }
 .Lines > * {
 	border-left: 2px solid black;
-	grid-row: 1/46;
+	grid-row: top/bottom;
 }
 .Lines > #day-1 {
 	grid-column: 1/2;
