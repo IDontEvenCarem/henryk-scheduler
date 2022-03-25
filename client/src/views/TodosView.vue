@@ -7,11 +7,11 @@ import StandardPageWrapper from "../components/StandardPageWrapper.vue";
 <StandardPageWrapper>
     <div class="todos-wrapper">
         <div>
-            <h1>Dexie: </h1>
+            <h1>Actual List: </h1>
             <SimpleTodoWidgetGoal></SimpleTodoWidgetGoal>
         </div>
         <div>
-            <h1>Another Dexie: </h1>
+            <h1>History: </h1>
             <SimpleTodoWidgetGoal></SimpleTodoWidgetGoal>
         </div>
     </div>
