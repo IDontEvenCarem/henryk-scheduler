@@ -4,6 +4,7 @@ import { dynamicQuery, database } from '@/dbintegration'
 import type { RepeatingEvent } from '@/database'
 import { AddRepeatingEvent, DeleteRepeatingEvent, DeleteAllRepeatingEvents } from '@/database'
 import CalendarModal from './CalendarModal.vue'
+import { EZModalYesNo } from '@/ezmodals'
 
 const events = dynamicQuery(database.timetable_repeating, [], table => table.toCollection())
 const modalOpen = ref(false)
@@ -29,14 +30,16 @@ function createRandomEvent() {
 	AddRepeatingEvent("losowy event", "blue", Math.floor(Math.random() * 7) + 1, time_start, time_end)
 }
 
-function deleteCalendarEvent(event: RepeatingEvent) {
-	if (event.id) {
+async function deleteCalendarEvent(event: RepeatingEvent) {
+	if (event.id && await EZModalYesNo("Are you sure?", "Do you want to delete a calendar event?")) {
 		DeleteRepeatingEvent(event.id)
 	}
 }
 
-function deleteAll() {
-	DeleteAllRepeatingEvents()
+async function deleteAll() {
+	if (await EZModalYesNo("Are you sure?", "Do you want to delete ALL calendar events?")) {
+		DeleteAllRepeatingEvents()
+	}
 }
 
 function addNewEvent(event: RepeatingEvent) {
