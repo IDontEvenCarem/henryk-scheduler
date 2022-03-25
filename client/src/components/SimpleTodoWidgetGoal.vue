@@ -12,7 +12,7 @@ const todos = dynamicQuery(
     [from, to, done],
     (table, from, to, done) => table
         .where('id')
-        .between(from, to, true, true)
+        .between(from, to)
         .filter(todo => done == 'null' || (todo.done && done == 'yes') || (!todo.done && done == 'no'))
 )
 
