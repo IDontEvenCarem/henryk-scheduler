@@ -14,6 +14,8 @@ const todos = dynamicQuery(
         .where('id')
         .between(from, to)
         .filter(todo => done == 'null' || (todo.done && done == 'yes') || (!todo.done && done == 'no'))
+        .reverse()
+        .sortBy('id')
 )
 
 const text = ref("")
@@ -60,12 +62,12 @@ function onDeleteTodo (todo: Todo) {
             </div>
             <input type="text" v-model="text" />
             <button @click="onAddTodo">Add todo:</button>
-            <div class="todo-wrapper">
+            <TransitionGroup tag="div" class="todo-wrapper">
                 <div class="todo-element" :class="{'todo-done' : todo.done}" v-for="todo in todos" :key="todo.id" @click="onToggleTodo(todo)">
                     <span>{{ todo.text }}</span>
                     <p @click="onDeleteTodo(todo)" class="thrashcan">🗑️</p>
                 </div>
-            </div>
+            </TransitionGroup>
         </div>
     </div>
 </template>
@@ -127,4 +129,27 @@ input[type=text]
     margin: 5px;
     padding: 5px;
 }
+
+
+.v-move,
+.v-enter-active,
+.v-leave-active {
+    transition: all 300ms ease;
+    transform: scale(1);
+}
+
+.v-enter-from,
+.v-leave-to {
+    transform: scale(0);
+}
+
+.v-enter-to,
+.v-leave-from {
+    transform: scale(1);
+}
+
+.v-leave-active {
+    position: absolute;
+}
+
 </style>
