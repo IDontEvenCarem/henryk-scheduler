@@ -10,10 +10,6 @@ import StandardPageWrapper from "../components/StandardPageWrapper.vue";
             <h1>Actual List: </h1>
             <SimpleTodoWidgetGoal></SimpleTodoWidgetGoal>
         </div>
-        <div>
-            <h1>History: </h1>
-            <SimpleTodoWidgetGoal></SimpleTodoWidgetGoal>
-        </div>
     </div>
 </StandardPageWrapper>
 </template>
