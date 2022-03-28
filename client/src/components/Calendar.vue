@@ -1,11 +1,15 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
-import { dynamicQuery, database } from '@/dbintegration'
-import type { RepeatingEvent } from '@/database'
+import { dynamicQuery, database, UpdateRepeatingEvent} from '@/dbintegration'
+import type { RepeatingEvent, AnyEvent } from '@/database'
 import { AddRepeatingEvent, DeleteRepeatingEvent, DeleteAllRepeatingEvents } from '@/database'
-import CalendarModal from './CalendarModal.vue'
+import CalendarModal from './Modals/CalendarModal.vue'
 import { EZModalYesNo } from '@/ezmodals'
 import _ from 'lodash'
+import { useModalStack } from '@/stores/ModalStack'
+import CalendarEventModalVue from './Modals/CalendarEventModal.vue'
+
+const modalStack = useModalStack()
 
 const events = dynamicQuery(database.timetable_repeating, [], table => table.toCollection())
 const modalOpen = ref(false)
@@ -51,10 +55,8 @@ function createRandomEvent() {
 	AddRepeatingEvent("losowy event", "blue", Math.floor(Math.random() * 7) + 1, time_start, time_end)
 }
 
-async function deleteCalendarEvent(event: RepeatingEvent) {
-	if (event.id && await EZModalYesNo("Are you sure?", "Do you want to delete a calendar event?")) {
-		DeleteRepeatingEvent(event.id)
-	}
+async function deleteCalendarEvent(id: number) {
+	DeleteRepeatingEvent(id)
 }
 
 async function deleteAll() {
@@ -68,11 +70,44 @@ function addNewEvent(event: RepeatingEvent) {
 	modalOpen.value = false
 }
 
+function openCreateModal() {
+	modalStack.push(CalendarEventModalVue, {}, true, (canceled, [change]) => {
+		if (canceled) return
+		if (change.kind !== 'created') return;
+		if ("weekday" in change.value) {
+			addNewEvent(change.value)
+		}
+	})
+}
+
+function openEventViewModal (event: AnyEvent) {
+	modalStack.push(CalendarEventModalVue, {event}, true, (canceled, [change]) => {
+		if (canceled) return;
+		if (change.kind === 'none') return;
+		else if (change.kind === 'deleted') {
+			if (change.value.id) {	
+				deleteCalendarEvent(change.value.id)
+			}
+		}
+		else if (change.kind === 'created') {
+			// should not happen
+			if ('weekday' in change.value) {
+				addNewEvent(change.value)
+			}
+		}
+		else if (change.kind === 'updated') {
+			if ('weekday' in change.value && change.value.id !== undefined) {
+				UpdateRepeatingEvent(change.value.id, change.value)
+			}
+		}
+	})
+}
+
 </script>
 
 <template>
-	<CalendarModal :is-open="modalOpen" @modalClose="modalOpen=false" @modal-ok="addNewEvent"></CalendarModal>
-	<button @click="modalOpen=true">Add New Event</button>
+	<!-- <CalendarModal :is-open="modalOpen" @modalClose="modalOpen=false" @modal-ok="addNewEvent"></CalendarModal> -->
+	<button @click="openCreateModal">Add New Event</button>
 	<button @click="createRandomEvent">Dodaj w losowym czasie</button>
 	<button @click="deleteAll">🗑️ Delete everything</button>
 	<!-- <p v-for="event in events">{{JSON.stringify(event)}}</p> -->
@@ -110,11 +145,11 @@ function addNewEvent(event: RepeatingEvent) {
 			</div>
 
 			<TransitionGroup name="scalebounce">
-				<div v-for="event in events" :style="(computeStyle(event) as any)" :key="event.id" class="EventSlot">
+				<div v-for="event in events" :style="(computeStyle(event) as any)" :key="event.id" class="EventSlot" @click="openEventViewModal(event)">
 					<div class="EventStatus">
 						<strong>{{ event.name }}</strong>
-						<br>
-						<button v-on:click="() => deleteCalendarEvent(event)">🗑️ Delete</button>
+						<!-- <br> -->
+						<!-- <button v-on:click="() => deleteCalendarEvent(event)">🗑️ Delete</button> -->
 					</div>
 				</div>
 			</TransitionGroup>

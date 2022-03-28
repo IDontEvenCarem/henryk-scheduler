@@ -10,14 +10,15 @@ function pop(...args : any[]) {
 </script>
 
 <template>
+    <!-- <div class="modal-stack-root" :gofront="modalStack.modals.length > 0"> -->
     <div class="modal-stack-root" :gofront="modalStack.modals.length > 0">
         <Transition name="fade">
-            <div class="background" v-if="modalStack.modals.length > 0"></div>
+            <div class="background" v-if="modalStack.modals.length > 0" @click="modalStack.cancel()"></div>
         </Transition>
         <Transition name="scalebounce">
             <TransitionGroup name="scalebounce">
-                <div v-for="modal in modalStack.modals" class="modal-wrapper" :key="modal.idx">
-                    <component :is="Object.assign({}, modal.component)" v-bind="modal.props" @closeModal="pop"></component>
+                <div v-for="modal in modalStack.modals" class="modal-wrapper" :key="modal.idx" @click.self="modalStack.cancel()">
+                    <component :is="Object.assign({}, modal.component)" v-bind="modal.props" @closeModal="pop" @close="pop"></component>
                 </div>
             </TransitionGroup>
         </Transition>
@@ -28,7 +29,7 @@ function pop(...args : any[]) {
 .modal-stack-root {
     display: grid;
     position: fixed;
-    z-index: -1;
+    z-index: 100;
     top: 0;
     bottom: 0;
     left: 0;
@@ -39,6 +40,9 @@ function pop(...args : any[]) {
 }
 .modal-stack-root[gofront=true] {
     z-index: 100;
+}
+.modal-stack-root:empty {
+    z-index: -1;
 }
 .background {
     background-color: black;

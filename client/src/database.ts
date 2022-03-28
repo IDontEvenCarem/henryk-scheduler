@@ -27,7 +27,6 @@ export interface RepeatingEvent {
     time_start: number,
     time_end: number
 }
-
 export interface Note {
     id?: number,
     title: string,
@@ -54,6 +53,8 @@ export class TypedDexie extends Dexie {
 }
 
 
+export type AnyEvent = Event | RepeatingEvent
+
 export const database = new TypedDexie()
 
 export async function Insert<T>(table: Table<T>, value: T) {
@@ -66,6 +67,10 @@ export async function AddTodo (text: string) {
 
 export async function AddRepeatingEvent (name: string, color: string, weekday: number, time_start: number, time_end: number) {
     return database.timetable_repeating.add({name, color, weekday, time_end, time_start, room: "", teacher: ""})
+}
+
+export async function UpdateRepeatingEvent(id: number, update: Partial<RepeatingEvent>) {
+    return database.timetable_repeating.update(id, update)
 }
 
 export async function MarkTodoDone (id: number) {
