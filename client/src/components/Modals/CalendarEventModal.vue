@@ -35,8 +35,9 @@ function onSubmit () {
             time_start: newEvent.start.split(":").map((v, i, a) => parseInt(v) * Math.pow(60, a.length - i - 1)).reduce((a, b) => a+b, 0),
         }))
         onStopEditing()
+        return;
     }
-    else if (creatingNew) {
+    if (creatingNew) {
         let event : RepeatingEvent = {
             name: newEvent.name,
             color: newEvent.color,
@@ -111,15 +112,17 @@ async function onStopEditing () {
             <label>Starts At:</label>
             <p>
                 {{
+                    Math.floor((event as RepeatingEvent).time_start / 60).toString().padStart(2, '0')
+                    + ':' + 
                     ((event as RepeatingEvent).time_start % 60).toString().padStart(2, '0')
-                    + ':' + Math.floor((event as RepeatingEvent).time_start / 60).toString().padStart(2, '0')
                 }}
             </p>
             <label>Ends At:</label>
             <p>
                 {{
+                    Math.floor((event as RepeatingEvent).time_end / 60).toString().padStart(2, '0')
+                    + ':' + 
                     ((event as RepeatingEvent).time_end % 60).toString().padStart(2, '0')
-                    + ':' + Math.floor((event as RepeatingEvent).time_end / 60).toString().padStart(2, '0')
                 }}
             </p>
 
