@@ -8,6 +8,7 @@ import { EZModalYesNo } from '@/ezmodals'
 import _ from 'lodash'
 import { useModalStack } from '@/stores/ModalStack'
 import CalendarEventModalVue from './Modals/CalendarEventModal.vue'
+import { QBtn } from 'quasar'
 
 const modalStack = useModalStack()
 
@@ -109,7 +110,7 @@ function openEventViewModal (event: AnyEvent) {
 	<!-- <CalendarModal :is-open="modalOpen" @modalClose="modalOpen=false" @modal-ok="addNewEvent"></CalendarModal> -->
 	<button @click="openCreateModal">Add New Event</button>
 	<button @click="createRandomEvent">Dodaj w losowym czasie</button>
-	<button @click="deleteAll">🗑️ Delete everything</button>
+	<QBtn color="primary" @click="deleteAll" label="🗑️ Delete everything"/>
 	<!-- <p v-for="event in events">{{JSON.stringify(event)}}</p> -->
 	<div class="CalendarStructure" :style="`grid-template-rows: auto auto repeat(${halfHourIntervals*3+3}, minmax(16px, 1fr))`">
 		<div class="corner"></div>

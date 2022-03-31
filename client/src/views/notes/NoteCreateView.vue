@@ -3,12 +3,13 @@ import {ref} from 'vue'
 import {useRoute, useRouter} from "vue-router";
 import StandardPageWrapper from "../../components/StandardPageWrapper.vue";
 import {AddNote} from '@/database'
+import { QEditor, QBtn, QInput } from 'quasar';
 
 const route = useRoute()
 const router = useRouter()
 const isEdit = route.name === 'noteEdit'
 
-const title = ref("New note")
+const title = ref("")
 const contents = ref("Start typing here!")
 
 function saveNote () {
@@ -22,15 +23,11 @@ function saveNote () {
 
 <template>
     <StandardPageWrapper>
-        <h2>Create a new note</h2>
-        <label for="note-title">Title</label><br>
-        <input type="text" id="note-title" v-model="title">
-
-        <br>
-        <label for="note-contents">Contents</label><br>
-        <textarea id="note-contents" v-model="contents"></textarea><br>
-        <button @click="saveNote">
+        <h4>Create a new note</h4><br>
+        <QInput outlined dark v-model="title" label="Title"></QInput><br>
+        <QEditor dark v-model="contents"></QEditor><br>
+        <QBtn color="primary" @click="saveNote">
             Create
-        </button>
+        </QBtn>
     </StandardPageWrapper>
 </template>
