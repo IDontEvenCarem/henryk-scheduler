@@ -52,7 +52,7 @@ function computeStyle(event: RepeatingEvent) {
 function createRandomEvent() {
 	const time_start = 8*60 + Math.floor(Math.random() * 60 * 3)
 	const time_end = time_start + Math.floor(Math.random() * 6) * 15
-	AddRepeatingEvent("losowy event", "blue", Math.floor(Math.random() * 7) + 1, time_start, time_end)
+	AddRepeatingEvent("losowy event", "#00eebb", Math.floor(Math.random() * 7) + 1, time_start, time_end)
 }
 
 async function deleteCalendarEvent(id: number) {

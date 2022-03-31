@@ -65,9 +65,14 @@ async function onStartEdit () {
     }
     isEditing.value = true
 
+    let startstring = Math.floor(props.event.time_start / 60).toString().padStart(2, '0')
+                    + ':' + (props.event.time_start % 60).toString().padStart(2, '0')
+    let endstring = Math.floor(props.event.time_end / 60).toString().padStart(2, '0')
+                    + ':' + (props.event.time_end % 60).toString().padStart(2, '0')
+
     newEvent.name = props.event.name
-    newEvent.start = props.event.time_start.toString()
-    newEvent.end = props.event.time_end.toString()
+    newEvent.start = startstring
+    newEvent.end = endstring
     newEvent.weekday = props.event.weekday.toString()
     newEvent.color = props.event.color
 }
