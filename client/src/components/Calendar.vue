@@ -1,17 +1,43 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
-import { dynamicQuery, database } from '@/dbintegration'
-import type { RepeatingEvent } from '@/database'
+import { computed, ref } from 'vue'
+import { dynamicQuery, database, UpdateRepeatingEvent} from '@/dbintegration'
+import type { RepeatingEvent, AnyEvent } from '@/database'
 import { AddRepeatingEvent, DeleteRepeatingEvent, DeleteAllRepeatingEvents } from '@/database'
-import CalendarModal from './CalendarModal.vue'
+import CalendarModal from './Modals/CalendarModal.vue'
+import { EZModalYesNo } from '@/ezmodals'
+import _ from 'lodash'
+import { useModalStack } from '@/stores/ModalStack'
+import CalendarEventModalVue from './Modals/CalendarEventModal.vue'
+
+const modalStack = useModalStack()
 
 const events = dynamicQuery(database.timetable_repeating, [], table => table.toCollection())
 const modalOpen = ref(false)
 
+const timeStart = computed(() => 
+	events.value.reduce((prev, curr) => Math.min(prev, curr.time_start), 8*60)
+)
+const timeEnd = computed(() => 
+	events.value.reduce((prev, curr) => Math.max(prev, curr.time_start), 16*60)
+)
+const halfHourIntervals = computed(() => 
+	Math.ceil((timeEnd.value - timeStart.value) / 30)
+)
+
+const days = computed(() => {
+	let now = new Date()
+	let startOfWeek = now.getDate() - now.getDay();
+	return Array(7).fill(0).map((v, i) => startOfWeek + i + 1);
+})
+
+const times = computed(() => 
+	_.range(0, halfHourIntervals.value+1).map(i => timeStart.value + i * 30)
+)
+
 function computeStyle(event: RepeatingEvent) {
-	const beginOffsetTime = 8 * 60; // calendar starts at 8:00
-	const relStart = Math.round((event.time_start - beginOffsetTime)/7.5) + 1
-	const relEnd = Math.round((event.time_end - beginOffsetTime)/7.5) + 1
+	const beginOffsetTime = timeStart.value; // calendar starts at 8:00
+	const relStart = Math.ceil((event.time_start - beginOffsetTime)/10) + 3
+	const relEnd = Math.ceil((event.time_end - beginOffsetTime)/10) + 3
 
 	const obj = {
 		"--weekday": event.weekday,
@@ -26,17 +52,17 @@ function computeStyle(event: RepeatingEvent) {
 function createRandomEvent() {
 	const time_start = 8*60 + Math.floor(Math.random() * 60 * 3)
 	const time_end = time_start + Math.floor(Math.random() * 6) * 15
-	AddRepeatingEvent("losowy event", "blue", Math.floor(Math.random() * 7) + 1, time_start, time_end)
+	AddRepeatingEvent("losowy event", "#00eebb", Math.floor(Math.random() * 7) + 1, time_start, time_end)
 }
 
-function deleteCalendarEvent(event: RepeatingEvent) {
-	if (event.id) {
-		DeleteRepeatingEvent(event.id)
+async function deleteCalendarEvent(id: number) {
+	DeleteRepeatingEvent(id)
+}
+
+async function deleteAll() {
+	if (await EZModalYesNo("Are you sure?", "Do you want to delete ALL calendar events?")) {
+		DeleteAllRepeatingEvents()
 	}
-}
-
-function deleteAll() {
-	DeleteAllRepeatingEvents()
 }
 
 function addNewEvent(event: RepeatingEvent) {
@@ -44,112 +70,128 @@ function addNewEvent(event: RepeatingEvent) {
 	modalOpen.value = false
 }
 
+function openCreateModal() {
+	modalStack.push(CalendarEventModalVue, {}, true, (canceled, [change]) => {
+		if (canceled) return
+		if (change.kind !== 'created') return;
+		if ("weekday" in change.value) {
+			addNewEvent(change.value)
+		}
+	})
+}
+
+function openEventViewModal (event: AnyEvent) {
+	modalStack.push(CalendarEventModalVue, {event}, true, (canceled, [change]) => {
+		if (canceled) return;
+		if (change.kind === 'none') return;
+		else if (change.kind === 'deleted') {
+			if (change.value.id) {	
+				deleteCalendarEvent(change.value.id)
+			}
+		}
+		else if (change.kind === 'created') {
+			// should not happen
+			if ('weekday' in change.value) {
+				addNewEvent(change.value)
+			}
+		}
+		else if (change.kind === 'updated') {
+			if ('weekday' in change.value && change.value.id !== undefined) {
+				UpdateRepeatingEvent(change.value.id, change.value)
+			}
+		}
+	})
+}
+
 </script>
 
 <template>
-	<CalendarModal :is-open="modalOpen" @modalClose="modalOpen=false" @modal-ok="addNewEvent"></CalendarModal>
-	<button @click="modalOpen=true">Add New Event</button>
+	<!-- <CalendarModal :is-open="modalOpen" @modalClose="modalOpen=false" @modal-ok="addNewEvent"></CalendarModal> -->
+	<button @click="openCreateModal">Add New Event</button>
 	<button @click="createRandomEvent">Dodaj w losowym czasie</button>
 	<button @click="deleteAll">🗑️ Delete everything</button>
 	<!-- <p v-for="event in events">{{JSON.stringify(event)}}</p> -->
-	<div class="CalendarStructure">
-		<div class="Header">
-			<ul class="Weekdays">
-				<li>Monday</li>
-				<li>Tuesday</li>
-				<li>Wednsday</li>
-				<li>Thursday</li>
-				<li>Friday</li>
-				<li>Saturday</li>
-				<li>Sunday</li>
-			</ul>
-			<ul class="DayNumbers">
-				<li>21</li>
-				<li>22</li>
-				<li>23</li>
-				<li>24</li>
-				<li>25</li>
-				<li>26</li>
-				<li>27</li>
-			</ul>
+	<div class="CalendarStructure" :style="`grid-template-rows: auto auto repeat(${halfHourIntervals*3+3}, minmax(16px, 1fr))`">
+		<div class="corner"></div>
+		<div class="Weekdays">
+			<div style="grid-column: 2/3">Monday</div>
+			<div style="grid-column: 3/4">Tuesday</div>
+			<div style="grid-column: 4/5">Wednsday</div>
+			<div style="grid-column: 5/6">Thursday</div>
+			<div style="grid-column: 6/7">Friday</div>
+			<div style="grid-column: 7/8">Saturday</div>
+			<div style="grid-column: 8/9">Sunday</div>
+		</div>
+		
+		<div class="DayNumbers">
+			<div v-for="day, i in days" :style="{'grid-column': `${i+2}/${i+3}`}">
+				{{day}}
+			</div>
 		</div>
 
 		<div class="TimeSlotsStructure">
-			<!-- <ul class="TimeSlots"> -->
-			<span>8:00</span>
-			<span>8:30</span>
-			<span>9:00</span>
-			<span>9:30</span>
-			<span>10:00</span>
-			<span>10:30</span>
-			<span>11:00</span>
-			<span>11:30</span>
-			<span>12:00</span>
-			<span>12:30</span>
-			<span>13:00</span>
-			<!-- </ul> -->
+			<div v-for="time, i in times" :style="{'grid-row': `${3*i+3}/ span 3`}">
+				{{Math.floor(time/60).toString().padStart(2, '0')}}:{{(time%60).toString().padStart(2, '0')}}
+			</div>
+		</div>
+
+		<div class="HLines">
+			<div class="HLine" v-for="time, i in times" :style="{'grid-area': `${3*i+3}/${1}/${3*(i+1)+2}/${9}`}"></div>
 		</div>
 
 		<div class="EventStructure">
 			<div class="Lines">
-				<div id="day-1"></div>
-				<div id="day-2"></div>
-				<div id="day-3"></div>
-				<div id="day-4"></div>
-				<div id="day-5"></div>
-				<div id="day-7"></div>
-				<div id="day-6"></div>
+				<div v-for="i in _.range(2, 9)" :style="{'grid-column': `${i}/${i+1}`, 'grid-row': `${1}/${halfHourIntervals*3 + 6}`}"></div>
 			</div>
 
-			<div v-for="event in events" :style="(computeStyle(event) as any)" :key="event.id" class="EventSlot">
-				<div class="EventStatus">
-					<strong>{{ event.name }}</strong>
-					<br>
-					<button v-on:click="() => deleteCalendarEvent(event)">🗑️ Delete</button>
+			<TransitionGroup name="scalebounce">
+				<div v-for="event in events" :style="(computeStyle(event) as any)" :key="event.id" class="EventSlot" @click="openEventViewModal(event)">
+					<div class="EventStatus">
+						<strong>{{ event.name }}</strong>
+						<!-- <br> -->
+						<!-- <button v-on:click="() => deleteCalendarEvent(event)">🗑️ Delete</button> -->
+					</div>
 				</div>
-			</div>
+			</TransitionGroup>
 		</div>
 	</div>
 </template>
 
 
 <style scoped>
-li {
-	list-style: none;
-}
-
-ul {
-	margin: 0;
-	padding: 0;
-}
-
 .CalendarStructure {
 	display: grid;
-	grid-template-columns: max-content auto;
-	grid-template-rows: auto;
-	gap: 1px, 1px;
-	grid-template-areas:
-		". CalendarHeader"
-		"TimeSlotsStructure TimeSlotsMain";
+	grid-template-columns: auto repeat(7, 1fr);
+	/* gap: 1px; */
 	background-color: white;
-}
-
-.Weekdays,
-.DayNumbers /* podzial dni na siatke */
- {
-	display: grid;
-	grid-template-columns: repeat(7, 1fr);
-	min-height: 30px;
-}
-.Weekdays /* dni tygodnia (slowo) */
- {
-	background: gray;
 	color: black;
 }
-.Header /* dni tygodnia kalendarza (liczba) */
- {
+
+.corner {
+	grid-area: 1/1/3/2;
+}
+
+.Weekdays {
+	display: contents;
+}
+.Weekdays > * {
+	grid-row: 1/2;
+	background: gray;
+}
+
+.DayNumbers {
+	display: contents;
+}
+.DayNumbers > * {
+	grid-row: 2/3;
+	text-align: center;
 	background: lightgray;
-	grid-area: CalendarHeader;
+}
+
+.Weekdays /* dni tygodnia (slowo) */
+ {
+	color: black;
+	text-align: center;
 }
 .Header > ul > * {
 	border-left: 2px solid black;
@@ -157,12 +199,16 @@ ul {
 }
 .TimeSlotsStructure /* kontener ze slotami godzin */
  {
-	grid-area: TimeSlotsStructure;
-	display: grid;
+	display: contents;
 	grid-template-columns: 1fr;
 	background: lightblue;
 	justify-content: left;
 	min-width: 80px;
+}
+.TimeSlotsStructure > * {
+	background: lightblue;
+	grid-column: 1/2;
+	grid-row: span 3;
 }
 .TimeSlotsStructure > span {
 	text-align: center;
@@ -171,12 +217,19 @@ ul {
 	border-top: 2px solid black;
 }
 
+.HLines {
+	display: contents;
+}
+.HLines > * {
+	border-top: 1px solid gray;
+}
+
 .EventStructure /* umieszczenie eventow */
  {
-	display: grid;
-	grid-template-columns: repeat(7, 1fr);
-	grid-template-rows: [top] repeat(44, 3vh) [bottom];
-	grid-area: TimeSlotsMain;
+	display: contents;
+	/* grid-template-columns: repeat(7, 1fr); */
+	/* grid-template-rows: [top] repeat(44, 3vh) [bottom]; */
+	/* grid-area: TimeSlotsMain; */
 	/* position: relative; */
 }
 .EventSlot /* wyglad eventu */
@@ -185,7 +238,7 @@ ul {
 	color: black;
 	border-color: black;
 	outline: none;
-	grid-column: var(--weekday) / span 1;
+	grid-column: calc(var(--weekday) + 1) / span 1;
 	grid-row: var(--timestart) / var(--timeend);
 	background-color: var(--color);
 }
@@ -197,27 +250,22 @@ ul {
 }
 .Lines > * {
 	border-left: 2px solid black;
-	grid-row: top/bottom;
+	grid-row: topLines/bottomLines;
 }
-.Lines > #day-1 {
-	grid-column: 1/2;
+
+.scalebounce-enter-active,
+.scalebounce-leave-active {
+    transition: all 300ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transform: scale(1);
 }
-.Lines > #day-2 {
-	grid-column: 2/3;
+
+.scalebounce-enter-from,
+.scalebounce-leave-to {
+    transform: scale(0);
 }
-.Lines > #day-3 {
-	grid-column: 3/4;
-}
-.Lines > #day-4 {
-	grid-column: 4/5;
-}
-.Lines > #day-5 {
-	grid-column: 5/6;
-}
-.Lines > #day-6 {
-	grid-column: 6/7;
-}
-.Lines > #day-7 {
-	grid-column: 7/8;
+
+.scalebounce-enter-to,
+.scalebounce-leave-from {
+    transform: scale(1);
 }
 </style>
