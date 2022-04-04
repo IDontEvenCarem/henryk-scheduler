@@ -1,50 +1,59 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
 import { dynamicQuery, database, UpdateRepeatingEvent} from '@/dbintegration'
-import type { RepeatingEvent, AnyEvent } from '@/database'
+import type { RepeatingEvent, AnyEvent, OneshotEvent } from '@/database'
 import { AddRepeatingEvent, DeleteRepeatingEvent, DeleteAllRepeatingEvents } from '@/database'
-import CalendarModal from './Modals/CalendarModal.vue'
 import { EZModalYesNo } from '@/ezmodals'
 import _ from 'lodash'
 import { useModalStack } from '@/stores/ModalStack'
-import CalendarEventModalVue from './Modals/CalendarEventModal.vue'
-import { QBtn } from 'quasar'
+import CalendarCreateModal from './Modals/CalendarCreateEventModal.vue'
+import { QBtn, date } from 'quasar'
+import CalendarViewEventModalVue from './Modals/CalendarViewEventModal.vue'
 
 const modalStack = useModalStack()
 
-const events = dynamicQuery(database.timetable_repeating, [], table => table.toCollection())
+const startOfWeek = date.startOfDate(date.subtractFromDate(new Date(), {day: date.getDayOfWeek(new Date())}), 'day')
+const endOfWeek = date.addToDate(startOfWeek, {day: 7})
+
+const repeatingEvents = dynamicQuery(database.repeating_events, [], table => 
+	table
+		.filter(e => (!e.repeats_start && !e.repeats_end) || date.isBetweenDates(startOfWeek, e.repeats_start as Date, e.repeats_end as Date))
+)
+
+const oneshotEvents = dynamicQuery(database.oneshot_events, [], table => 
+	table
+		.where('date')
+		.between(startOfWeek, endOfWeek, true, true)
+)
+
 const modalOpen = ref(false)
 
 const timeStart = computed(() => 
-	events.value.reduce((prev, curr) => Math.min(prev, curr.time_start), 8*60)
+	repeatingEvents.value.reduce((prev, curr) => Math.min(prev, curr.time_start), 8*60)
 )
 const timeEnd = computed(() => 
-	events.value.reduce((prev, curr) => Math.max(prev, curr.time_start), 16*60)
+	repeatingEvents.value.reduce((prev, curr) => Math.max(prev, curr.time_start), 16*60)
 )
 const halfHourIntervals = computed(() => 
 	Math.ceil((timeEnd.value - timeStart.value) / 30)
 )
 
-const days = computed(() => {
-	let now = new Date()
-	let startOfWeek = now.getDate() - now.getDay();
-	return Array(7).fill(0).map((v, i) => startOfWeek + i + 1);
-})
+const days = computed(() => Array(7).fill(0).map((v, i) => date.addToDate(startOfWeek, {day: i+1})).map(date => date.getDate()))
 
-const times = computed(() => 
-	_.range(0, halfHourIntervals.value+1).map(i => timeStart.value + i * 30)
-)
+const times = computed(() => _.range(0, halfHourIntervals.value+1).map(i => timeStart.value + i * 30))
 
-function computeStyle(event: RepeatingEvent) {
+function computeStyle(event: RepeatingEvent | OneshotEvent) {
 	const beginOffsetTime = timeStart.value; // calendar starts at 8:00
 	const relStart = Math.ceil((event.time_start - beginOffsetTime)/10) + 3
 	const relEnd = Math.ceil((event.time_end - beginOffsetTime)/10) + 3
 
+	console.log(event)
+
 	const obj = {
-		"--weekday": event.weekday,
+		"--weekday": event.type === "RepeatingEvent" ? event.weekday : event.date.getDay(), 
 		"--timestart": relStart,
 		"--timeend": relEnd,
-		"--color": event.color
+		"--color": event.color || "#00eebb"
 	}
 
 	return obj
@@ -63,6 +72,7 @@ async function deleteCalendarEvent(id: number) {
 async function deleteAll() {
 	if (await EZModalYesNo("Are you sure?", "Do you want to delete ALL calendar events?")) {
 		DeleteAllRepeatingEvents()
+		database.oneshot_events.clear();
 	}
 }
 
@@ -72,36 +82,32 @@ function addNewEvent(event: RepeatingEvent) {
 }
 
 function openCreateModal() {
-	modalStack.push(CalendarEventModalVue, {}, true, (canceled, [change]) => {
-		if (canceled) return
-		if (change.kind !== 'created') return;
-		if ("weekday" in change.value) {
-			addNewEvent(change.value)
-		}
-	})
+	modalStack.push(CalendarCreateModal, {}, true, (canceled) => {})
 }
 
 function openEventViewModal (event: AnyEvent) {
-	modalStack.push(CalendarEventModalVue, {event}, true, (canceled, [change]) => {
-		if (canceled) return;
-		if (change.kind === 'none') return;
-		else if (change.kind === 'deleted') {
-			if (change.value.id) {	
-				deleteCalendarEvent(change.value.id)
-			}
-		}
-		else if (change.kind === 'created') {
-			// should not happen
-			if ('weekday' in change.value) {
-				addNewEvent(change.value)
-			}
-		}
-		else if (change.kind === 'updated') {
-			if ('weekday' in change.value && change.value.id !== undefined) {
-				UpdateRepeatingEvent(change.value.id, change.value)
-			}
-		}
-	})
+	modalStack.push(CalendarViewEventModalVue as any, {event}, true, (c) => {})
+
+	// modalStack.push(CalendarCreateModal, {event}, true, (canceled, [change]) => {
+	// 	if (canceled) return;
+	// 	if (change.kind === 'none') return;
+	// 	else if (change.kind === 'deleted') {
+	// 		if (change.value.id) {	
+	// 			deleteCalendarEvent(change.value.id)
+	// 		}
+	// 	}
+	// 	else if (change.kind === 'created') {
+	// 		// should not happen
+	// 		if ('weekday' in change.value) {
+	// 			addNewEvent(change.value)
+	// 		}
+	// 	}
+	// 	else if (change.kind === 'updated') {
+	// 		if ('weekday' in change.value && change.value.id !== undefined) {
+	// 			UpdateRepeatingEvent(change.value.id, change.value)
+	// 		}
+	// 	}
+	// })
 }
 
 </script>
@@ -146,11 +152,14 @@ function openEventViewModal (event: AnyEvent) {
 			</div>
 
 			<TransitionGroup name="scalebounce">
-				<div v-for="event in events" :style="(computeStyle(event) as any)" :key="event.id" class="EventSlot" @click="openEventViewModal(event)">
+				<div v-for="event in repeatingEvents" :style="(computeStyle(event) as any)" :key="event.id" class="EventSlot" @click="openEventViewModal(event)">
 					<div class="EventStatus">
 						<strong>{{ event.name }}</strong>
-						<!-- <br> -->
-						<!-- <button v-on:click="() => deleteCalendarEvent(event)">🗑️ Delete</button> -->
+					</div>
+				</div>
+				<div v-for="event in oneshotEvents" :style="(computeStyle(event) as any)" :key="event.id" class="EventSlot" @click="openEventViewModal(event)">
+					<div class="EventStatus">
+						<strong>{{ event.name }}</strong>
 					</div>
 				</div>
 			</TransitionGroup>
@@ -238,6 +247,7 @@ function openEventViewModal (event: AnyEvent) {
 	border-radius: 5px;
 	color: black;
 	border-color: black;
+	background-color: blue;
 	outline: none;
 	grid-column: calc(var(--weekday) + 1) / span 1;
 	grid-row: var(--timestart) / var(--timeend);

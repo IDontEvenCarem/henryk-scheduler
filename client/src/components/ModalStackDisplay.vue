@@ -15,13 +15,11 @@ function pop(...args : any[]) {
         <Transition name="fade">
             <div class="background" v-if="modalStack.modals.length > 0" @click="modalStack.cancel()"></div>
         </Transition>
-        <Transition name="scalebounce">
-            <TransitionGroup name="scalebounce">
-                <div v-for="modal in modalStack.modals" class="modal-wrapper" :key="modal.idx" @click.self="modalStack.cancel()">
-                    <component :is="Object.assign({}, modal.component)" v-bind="modal.props" @closeModal="pop" @close="pop"></component>
-                </div>
-            </TransitionGroup>
-        </Transition>
+        <TransitionGroup name="scalebounce">
+            <div v-for="modal in modalStack.modals" class="modal-wrapper" :key="modal.idx" @click.self="modalStack.cancel()">
+                <component :is="Object.assign({}, modal.component)" v-bind="modal.props" @closeModal="pop" @close="pop"></component>
+            </div>
+        </TransitionGroup>
     </div>
 </template>
 

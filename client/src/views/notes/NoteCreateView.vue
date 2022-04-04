@@ -24,8 +24,8 @@ function saveNote () {
 <template>
     <StandardPageWrapper>
         <h4>Create a new note</h4><br>
-        <QInput outlined dark v-model="title" label="Title"></QInput><br>
-        <QEditor dark v-model="contents"></QEditor><br>
+        <QInput outlined v-model="title" label="Title"></QInput><br>
+        <QEditor v-model="contents"></QEditor><br>
         <QBtn color="primary" @click="saveNote">
             Create
         </QBtn>

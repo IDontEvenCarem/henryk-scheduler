@@ -16,7 +16,7 @@ const notes = dynamicQuery(database.notes, [], table => table.toCollection())
             </QBtn>
         </RouterLink>
         <!-- <QScrollArea> -->
-            <QList dark separator>
+            <QList separator>
                 <RouterLink v-for="note in notes" :to="`/notes/view/${note.id}`">
                     <QItem clickable>
                         <QItemSection>
