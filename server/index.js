@@ -3,6 +3,7 @@ const jose = require('jose')
 const argon = require('argon2')
 const multer = require('multer')
 const mongodb = require('mongodb')
+const Diff = require('diff');
 
 
 async function main() {
@@ -10,6 +11,7 @@ async function main() {
     await client.connect();
     const db = await client.db("henryk_scheduler")
     const users_col = db.collection('users')
+    const history_col = db.collection('history')
 
     async function save_user(username, password) {
         if (await users_col.countDocuments({ username }) != 0) {
@@ -87,6 +89,183 @@ async function main() {
         }
     })
 
+    app.post('/change', async (req, res) => {
+        const data = req.body
+        if (!('usertoken' in data)) {
+            return res.status(400).json({ error: "You have to authenticate to save your data" })
+        }
+        const jwt = data.usertoken
+        const { payload, protectedHeader } = await jose.jwtVerify(jwt, publicKey, {
+            alg: 'PS256'
+        })
+        const username = payload.username
+        const userid = (await users_col.findOne({ username }))._id
+
+        if ('added' in data) {
+            if ('notes' in data.added)
+                await users_col.updateOne({ _id: userid },
+                    {
+                        $push: {
+                            notes: {
+                                $each: data.added.notes
+                            }
+                        }
+                    })
+            if ('todo' in data.added)
+                await users_col.updateOne({ _id: userid },
+                    {
+                        $push: {
+                            todo: {
+                                $each: data.added.todo
+                            }
+                        }
+                    })
+            if ('calendar' in data.added)
+                await users_col.updateOne({ _id: userid },
+                    {
+                        $push: {
+                            calendar: {
+                                $each: data.added.calendar
+                            }
+                        }
+                    })
+        }
+        if ('deleted' in data) {
+            if ('notes' in data.deleted)
+                await users_col.updateOne({ _id: userid },
+                    {
+                        $pull: {
+                            notes: {
+                                _id: {
+                                    $in: data.deleted.notes
+                                }
+                            }
+                        }
+                    })
+            if ('todo' in data.deleted)
+                await users_col.updateOne({ _id: userid },
+                    {
+                        $pull: {
+                            todo: {
+                                _id: {
+                                    $in: data.deleted.todo
+                                }
+                            }
+                        }
+                    })
+            if ('calendar' in data.deleted)
+                await users_col.updateOne({ _id: userid },
+                    {
+                        $pull: {
+                            calendar: {
+                                _id: {
+                                    $in: data.deleted.calendar
+                                }
+                            }
+                        }
+                    })
+        }
+        if ('modified' in data) {
+            if ('notes' in data.modified) {
+                for (const item of data.modified.notes) {
+                    await users_col.updateOne({ _id: userid, "notes._id": item._id },
+                        {
+                            $set: {
+                                "notes.$": item
+                            }
+                        })
+                }
+            }
+            if ('todo' in data.modified) {
+                for (const item of data.modified.todo) {
+                    await users_col.updateOne({ _id: userid, "todo._id": item._id },
+                        {
+                            $set: {
+                                "todo.$": item
+                            }
+                        })
+                }
+            }
+            if ('calendar' in data.modified) {
+                for (const item of data.modified.calendar) {
+                    await users_col.updateOne({ _id: userid, "calendar._id": item._id },
+                        {
+                            $set: {
+                                "calendar.$": item
+                            }
+                        })
+                }
+            }
+        }
+        res.status(200).json({ message: "Changes approved" })
+    })
+
+    app.post('/upsync', async (req, res) => {
+        const data = req.body
+        if (!('usertoken' in data)) {
+            return res.status(400).json({ error: "You have to authenticate to save your data" })
+        }
+        const jwt = data.usertoken
+        const { payload, protectedHeader } = await jose.jwtVerify(jwt, publicKey, {
+            alg: 'PS256'
+        })
+        const username = payload.username
+        const userid = (await users_col.findOne({ username }))._id
+        // await history_col.insertOne({ userid, change: data })
+        await users_col.updateOne({ _id: userid }, { $set: { notes: [], todo: [], calendar: [] } })
+        if ('notes' in data)
+            await users_col.updateOne({ _id: userid },
+                {
+                    $push: {
+                        notes: {
+                            $each: data.notes
+                        }
+                    }
+                })
+        if ('todo' in data)
+            await users_col.updateOne({ _id: userid },
+                {
+                    $push: {
+                        todo: {
+                            $each: data.todo
+                        }
+                    }
+                })
+        if ('calendar' in data)
+            await users_col.updateOne({ _id: userid },
+                {
+                    $push: {
+                        calendar: {
+                            $each: data.calendar
+                        }
+                    }
+                })
+
+        res.status(200).json({ message: "Upsync done" })
+    })
+
+    app.get('/downsync', async (req, res) => {
+        const data = req.body
+        if (!('usertoken' in data)) {
+            return res.status(400).json({ error: "You have to authenticate to save your data" })
+        }
+        const jwt = data.usertoken
+        const { payload, protectedHeader } = await jose.jwtVerify(jwt, publicKey, {
+            alg: 'PS256'
+        })
+        const username = payload.username
+        const userid = (await users_col.findOne({ username }))._id
+
+        const usernotes = (await users_col.findOne({ username })).notes
+        const usertodo = (await users_col.findOne({ username })).todo
+        const usercalendar = (await users_col.findOne({ username })).calendar
+
+        res.status(200).json({ notes: usernotes, todo: usertodo, calendar: usercalendar })
+    })
+
+    app.get('/history', (req, res) => {
+        // ?
+    })
 
     app.listen(port, () => {
         console.log(`Example app listening on port ${port}`)
@@ -94,3 +273,29 @@ async function main() {
 }
 
 main()
+
+const exampleEvent1 = {
+    usertoken: "JWT-ASDASdASDASDASDASDASD",
+    added: {
+        notes: [
+            {
+                _id: 123,
+                title: "testowy tytuł",
+                contents: "Hello, world!"
+            }
+        ]
+    },
+    deleted: {
+        notes: [123, 4, 6],
+        todo: [1120]
+    },
+    modified: {
+        calendar: [
+            {
+                _id: 68,
+                time_start: "12:30",
+                time_end: "13:30"
+            }
+        ]
+    }
+}
