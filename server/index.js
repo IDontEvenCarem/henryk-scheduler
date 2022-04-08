@@ -75,6 +75,7 @@ async function main() {
             console.log(err)
         }
     })
+    
     app.post('/register', async (req, res) => {
         try {
             if (!(req.body.username && req.body.password)) {
@@ -212,35 +213,8 @@ async function main() {
         const username = payload.username
         const userid = (await users_col.findOne({ username }))._id
         // await history_col.insertOne({ userid, change: data })
-        await users_col.updateOne({ _id: userid }, { $set: { notes: [], todo: [], calendar: [] } })
-        if ('notes' in data)
-            await users_col.updateOne({ _id: userid },
-                {
-                    $push: {
-                        notes: {
-                            $each: data.notes
-                        }
-                    }
-                })
-        if ('todo' in data)
-            await users_col.updateOne({ _id: userid },
-                {
-                    $push: {
-                        todo: {
-                            $each: data.todo
-                        }
-                    }
-                })
-        if ('calendar' in data)
-            await users_col.updateOne({ _id: userid },
-                {
-                    $push: {
-                        calendar: {
-                            $each: data.calendar
-                        }
-                    }
-                })
-
+        await users_col.updateOne({ _id: userid }, { $set: { notes: data.notes, todo: data.todo, calendar: data.calendar } })
+       
         res.status(200).json({ message: "Upsync done" })
     })
 
