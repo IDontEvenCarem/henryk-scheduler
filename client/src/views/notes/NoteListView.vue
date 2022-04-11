@@ -24,7 +24,7 @@ const notes = dynamicQuery(database.notes, [], table => table.toCollection())
                                 {{note.title}}
                             </QItemLabel>
                             <QItemLabel caption>
-                                {{note.content.substring(0, 64) + (note.content.length > 64 ? "..." : "")}}
+                                {{ note.content.replace(/\<\/?[^\>]+\>/g, ' ').substring(0, 64) + (note.content.length > 64 ? "..." : "")}}
                             </QItemLabel>
                         </QItemSection>
                     </QItem>

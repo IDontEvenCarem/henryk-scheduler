@@ -7,7 +7,7 @@ import { EZModalYesNo } from '@/ezmodals'
 import _ from 'lodash'
 import { useModalStack } from '@/stores/ModalStack'
 import CalendarCreateModal from './Modals/CalendarCreateEventModal.vue'
-import { QBtn, date } from 'quasar'
+import { QBtn, date, QBtnGroup } from 'quasar'
 import CalendarViewEventModalVue from './Modals/CalendarViewEventModal.vue'
 
 const modalStack = useModalStack()
@@ -29,10 +29,16 @@ const oneshotEvents = dynamicQuery(database.oneshot_events, [], table =>
 const modalOpen = ref(false)
 
 const timeStart = computed(() => 
-	repeatingEvents.value.reduce((prev, curr) => Math.min(prev, curr.time_start), 8*60)
+	Math.min(
+		repeatingEvents.value.reduce((prev, curr) => Math.min(prev, curr.time_start), 8*60),
+		oneshotEvents.value.reduce((prev, curr) => Math.min(prev, curr.time_start), 8*60)
+	)
 )
 const timeEnd = computed(() => 
-	repeatingEvents.value.reduce((prev, curr) => Math.max(prev, curr.time_start), 16*60)
+	Math.max(
+		repeatingEvents.value.reduce((prev, curr) => Math.max(prev, curr.time_start), 16*60),
+		oneshotEvents.value.reduce((prev, curr) => Math.max(prev, curr.time_start), 16*60),
+	)
 )
 const halfHourIntervals = computed(() => 
 	Math.ceil((timeEnd.value - timeStart.value) / 30)
@@ -114,9 +120,11 @@ function openEventViewModal (event: AnyEvent) {
 
 <template>
 	<!-- <CalendarModal :is-open="modalOpen" @modalClose="modalOpen=false" @modal-ok="addNewEvent"></CalendarModal> -->
-	<button @click="openCreateModal">Add New Event</button>
-	<button @click="createRandomEvent">Dodaj w losowym czasie</button>
-	<QBtn color="primary" @click="deleteAll" label="🗑️ Delete everything"/>
+	<QBtnGroup>
+		<QBtn color="primary" @click="openCreateModal">Add New Event</QBtn>
+		<QBtn color="primary" @click="createRandomEvent">Dodaj w losowym czasie</QBtn>
+		<QBtn color="primary" @click="deleteAll" label="🗑️ Delete everything"/>
+	</QBtnGroup>
 	<!-- <p v-for="event in events">{{JSON.stringify(event)}}</p> -->
 	<div class="CalendarStructure" :style="`grid-template-rows: auto auto repeat(${halfHourIntervals*3+3}, minmax(16px, 1fr))`">
 		<div class="corner"></div>

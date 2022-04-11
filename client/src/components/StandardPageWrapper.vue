@@ -18,7 +18,7 @@ function OnLogout() {
 <template>
     <div class="page-layout-wrapper">
         <QBar class="bg-primary">
-            <div><RouterLink to="/" class="gt-md">Home</RouterLink></div>
+            <div><RouterLink to="/">Home</RouterLink></div>
             <div><RouterLink to="/about">About</RouterLink></div>
             <div><RouterLink to="/todos">Todos</RouterLink></div>
             <div><RouterLink to="/calendar">Calendar</RouterLink></div>
@@ -40,7 +40,9 @@ function OnLogout() {
 </template>
 
 <style scoped>
-    main {
-        padding: 1ch;
+    .page-layout-wrapper {
+        min-height: 100vh;
+        display: grid;
+        grid-template-rows: max-content 1fr;
     }
 </style>

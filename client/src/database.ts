@@ -6,7 +6,8 @@ import _ from 'lodash'
 export interface Todo {
     id?: number,
     text: string,
-    done: boolean
+    done: boolean,
+    parent_id?: number
 }
 
 export interface OneshotEvent {
@@ -42,19 +43,35 @@ export interface Note {
     editedAt: string
 }
 
+export interface LinkTodoCalendar {
+    id?: number,
+    calendar_event_type: string,
+    calendar_id: number,
+    todo_id: number
+}
+
+export interface LinkTodoNotes {
+    id?: number,
+    todo_id: number,
+    note_id: number
+}
+
 export class TypedDexie extends Dexie {
     todos!: Table<Todo>;
     oneshot_events!: Table<OneshotEvent>;
     repeating_events!: Table<RepeatingEvent>;
     notes!: Table<Note>;
+    link_todo_calendar!: Table<LinkTodoCalendar>
 
     constructor() {
         super('testdexie')
-        this.version(10).stores({
+        this.version(12).stores({
             todos: '++id',
             oneshot_events: '++id, date',
             repeating_events: '++id, weekday, repeats_start, repeats_end',
-            notes: '++id, title'
+            notes: '++id, title',
+            link_todo_calendar: '++id, calendar_id, todo_id',
+            link_todo_notes: '++id, todo_id, note_id'
         })
     }
 }
@@ -106,8 +123,8 @@ export async function AlterOneshotEvent (change: Change<OneshotEvent>) {
     }
 }
 
-export async function AddTodo (text: string) {
-    return await database.todos.add({text, done: false})
+export async function AddTodo (text: string, parent_id: number | undefined = undefined) : Promise<number> {
+    return (await database.todos.add({text, done: false, parent_id})) as number
 }
 
 export async function AddRepeatingEvent (name: string, color: string, weekday: number, time_start: number, time_end: number) {
@@ -124,6 +141,15 @@ export async function MarkTodoDone (id: number) {
 
 export async function MarkTodoUndone (id: number) {
     return await database.todos.update(id, {done: false})
+}
+
+export async function ToggleTodo(id: number) {
+    const todo = await database.todos.get(id)
+    if (todo?.done) {
+        MarkTodoUndone(id)
+    } else {
+        MarkTodoDone(id)
+    }
 }
 
 export async function DeleteTodo (id: number) {

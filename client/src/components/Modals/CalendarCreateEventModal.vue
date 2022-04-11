@@ -8,7 +8,6 @@ import {
     QInput, QDate, QDialog, QSelect, QIcon, QPopupProxy, QTime, date, QColor
 } from "quasar";
 import { ref, watch, watchEffect, type Ref } from "vue";
-import { parse } from "@babel/parser";
 
 const props = defineProps<{
     event?: AnyEvent
@@ -46,7 +45,7 @@ const runs = ref('')
 const edate = ref('')
 
 watch(runsRange, (v) => {
-    if (v === undefined) return;
+    if (!v) return;
     const {from, to} = v;
     runs.value = `${from} - ${to}`
 })
