@@ -18,6 +18,7 @@ async function main() {
             throw Error("User already registered with that name")
         }
 
+        history_col.insertOne({ username })
         return users_col.insertOne({
             username,
             password: await argon.hash(password)
@@ -75,7 +76,7 @@ async function main() {
             console.log(err)
         }
     })
-    
+
     app.post('/register', async (req, res) => {
         try {
             if (!(req.body.username && req.body.password)) {
@@ -101,6 +102,7 @@ async function main() {
         })
         const username = payload.username
         const userid = (await users_col.findOne({ username }))._id
+        const user_history_id = (await history_col.findOne({ username }))._id
 
         if ('added' in data) {
             if ('notes' in data.added)
@@ -132,7 +134,31 @@ async function main() {
                     })
         }
         if ('deleted' in data) {
-            if ('notes' in data.deleted)
+            if ('notes' in data.deleted) {
+                let deleted_notes = (await users_col.findOne({ _id: userid })).notes
+                deleted_notes = Object.values(deleted_notes)
+                let is = false
+                for (let i = 0; i < deleted_notes.length; i++) {
+                    for (let j = 0; j < data.deleted.notes.length; j++) {
+                        if (deleted_notes[i]._id == data.deleted.notes[j]) {
+                            is = true
+                            break
+                        }
+                    }
+                    if (is == false) {
+                        deleted_notes.splice(i, 1)
+                        i--
+                    }
+                    is = false
+                }
+                await history_col.updateOne({ _id: user_history_id },
+                    {
+                        $addToSet: {
+                            notes: {
+                                $each: deleted_notes
+                            }
+                        }
+                    })
                 await users_col.updateOne({ _id: userid },
                     {
                         $pull: {
@@ -143,7 +169,32 @@ async function main() {
                             }
                         }
                     })
-            if ('todo' in data.deleted)
+            }
+            if ('todo' in data.deleted) {
+                let deleted_todo = (await users_col.findOne({ _id: userid })).todo
+                deleted_todo = Object.values(deleted_todo)
+                let is = false
+                for (let i = 0; i < deleted_todo.length; i++) {
+                    for (let j = 0; j < data.deleted.todo.length; j++) {
+                        if (deleted_todo[i]._id == data.deleted.todo[j]) {
+                            is = true
+                            break
+                        }
+                    }
+                    if (is == false) {
+                        deleted_todo.splice(i, 1)
+                        i--
+                    }
+                    is = false
+                }
+                await history_col.updateOne({ _id: user_history_id },
+                    {
+                        $addToSet: {
+                            todo: {
+                                $each: deleted_todo
+                            }
+                        }
+                    })
                 await users_col.updateOne({ _id: userid },
                     {
                         $pull: {
@@ -154,7 +205,32 @@ async function main() {
                             }
                         }
                     })
-            if ('calendar' in data.deleted)
+            }
+            if ('calendar' in data.deleted) {
+                let deleted_calendar = (await users_col.findOne({ _id: userid })).calendar
+                deleted_calendar = Object.values(deleted_calendar)
+                let is = false
+                for (let i = 0; i < deleted_calendar.length; i++) {
+                    for (let j = 0; j < data.deleted.calendar.length; j++) {
+                        if (deleted_calendar[i]._id == data.deleted.calendar[j]) {
+                            is = true
+                            break
+                        }
+                    }
+                    if (is == false) {
+                        deleted_calendar.splice(i, 1)
+                        i--
+                    }
+                    is = false
+                }
+                await history_col.updateOne({ _id: user_history_id },
+                    {
+                        $addToSet: {
+                            todo: {
+                                $each: deleted_calendar
+                            }
+                        }
+                    })
                 await users_col.updateOne({ _id: userid },
                     {
                         $pull: {
@@ -165,10 +241,23 @@ async function main() {
                             }
                         }
                     })
+            }
         }
         if ('modified' in data) {
             if ('notes' in data.modified) {
+                let modified_notes = (await users_col.findOne({ _id: userid })).notes
+                modified_notes = Object.values(modified_notes)
                 for (const item of data.modified.notes) {
+                    for (var note of modified_notes) {
+                        if (note._id == item._id) {
+                            await history_col.updateOne({ _id: user_history_id }, {
+                                $addToSet: {
+                                    notes: note
+                                }
+                            })
+                            break
+                        }
+                    }
                     await users_col.updateOne({ _id: userid, "notes._id": item._id },
                         {
                             $set: {
@@ -178,7 +267,19 @@ async function main() {
                 }
             }
             if ('todo' in data.modified) {
+                let modified_todo = (await users_col.findOne({ _id: userid })).todo
+                modified_todo = Object.values(modified_todo)
                 for (const item of data.modified.todo) {
+                    for (var todo of modified_todo) {
+                        if (todo._id == item._id) {
+                            await history_col.updateOne({ _id: user_history_id }, {
+                                $addToSet: {
+                                    todo: todo
+                                }
+                            })
+                            break
+                        }
+                    }
                     await users_col.updateOne({ _id: userid, "todo._id": item._id },
                         {
                             $set: {
@@ -186,9 +287,22 @@ async function main() {
                             }
                         })
                 }
+
             }
             if ('calendar' in data.modified) {
-                for (const item of data.modified.calendar) {
+                let modified_calendar = (await users_col.findOne({ _id: userid })).calendar
+                modified_calendar = Object.values(modified_calendar)
+                for (const item of data.modified.notes) {
+                    for (var calendar of modified_calendar) {
+                        if (calendar._id == item._id) {
+                            await history_col.updateOne({ _id: user_history_id }, {
+                                $addToSet: {
+                                    calendar: calendar
+                                }
+                            })
+                            break
+                        }
+                    }
                     await users_col.updateOne({ _id: userid, "calendar._id": item._id },
                         {
                             $set: {
@@ -196,6 +310,7 @@ async function main() {
                             }
                         })
                 }
+
             }
         }
         res.status(200).json({ message: "Changes approved" })
@@ -212,9 +327,25 @@ async function main() {
         })
         const username = payload.username
         const userid = (await users_col.findOne({ username }))._id
-        // await history_col.insertOne({ userid, change: data })
+        const user_history_id = (await history_col.findOne({ username }))._id
+        const user_notes = (await users_col.findOne({ _id: userid })).notes || []
+        const user_todo = (await users_col.findOne({ _id: userid })).todo || []
+        const user_calendar = (await users_col.findOne({ _id: userid })).calendar || []
+
+        await history_col.updateOne({ _id: user_history_id },
+            {
+                $addToSet:
+                {
+                    notes:
+                        { $each: user_notes },
+                    todo:
+                        { $each: user_todo },
+                    calendar:
+                        { $each: user_calendar }
+                }
+            })
         await users_col.updateOne({ _id: userid }, { $set: { notes: data.notes, todo: data.todo, calendar: data.calendar } })
-       
+
         res.status(200).json({ message: "Upsync done" })
     })
 
