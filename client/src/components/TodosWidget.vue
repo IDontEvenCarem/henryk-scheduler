@@ -3,14 +3,18 @@ import {useQuasar ,QTree, QBtn, QCheckbox, QIcon, QCard, QScrollArea} from 'quas
 import {dynamicQuery, database} from '@/dbintegration'
 import { computed } from '@vue/reactivity';
 import { type Todo, AddTodo, ToggleTodo, DeleteTodo} from '@/database';
-import {ref} from 'vue'
+import {ref, watchEffect} from 'vue'
+import type {Ref} from 'vue'
 import CreateTodoQModalVue from './Modals/CreateTodoQModal.vue';
 import { EZModalYesNo } from '@/ezmodals';
+import LinkFromTodoModalVue from './Modals/LinkFromTodoModal.vue';
 
 const $q = useQuasar()
 const todos = dynamicQuery(database.todos, [], table => table.toCollection())
 
-const tree = computed(() => {
+const tree : Ref<any[]> = ref([])
+
+watchEffect(() => {
     // step one - prepare a mapping between parent id and children ids
     const idmap = new Map<number, number[]>()
     function insert_ids(own: number, parent: number | undefined = undefined) {
@@ -33,7 +37,19 @@ const tree = computed(() => {
         return idmap.get(parent)?.map(chid => todos.value.find(todo => todo.id === chid)).map(todo => ({...todo, children: get_child_array(todo!.id!)}))
     }
     const roots = todos.value.filter(todo => todo.parent_id === undefined).map(todo => ({...todo, children: get_child_array(todo.id!)}))
-    return roots;
+
+    // step three - add linked entities
+    async function insert_links (treeEntry : Todo & {children: any[]}) {
+        const linked_notes = await database.link_todo_notes.where('todo_id').equals(treeEntry.id!).toArray()
+        const local = Promise.all(linked_notes.map(link => database.notes.where('id').equals(link.note_id).toArray()))
+        const child = Promise.all((treeEntry.children||[]).map(insert_links))
+        if (treeEntry.children) treeEntry.children.unshift(...(await local).map(v => ({...v[0], body: 'note', header: 'note'})))
+        await child
+    }
+
+    Promise.all(roots.map(root => insert_links(root))).then(_ => {
+        tree.value = roots
+    })
 })
 
 const checked = computed(() => {
@@ -68,8 +84,15 @@ function add_under(id: number) {
     })
 }
 
-function edit(id: number) {
-
+function link(id: number) {
+    $q.dialog({
+        component: LinkFromTodoModalVue,
+        componentProps: {
+            todo_id: id
+        }
+    }).onOk(payload => {
+        database.link_todo_notes.add({note_id: payload, todo_id: id})
+    })
 }
 
 async function remove(id: number) {
@@ -91,9 +114,16 @@ async function remove(id: number) {
                                 <QCheckbox color="positive" :name="prop.node.id.toString()" :val="prop.node.id" :model-value="checked" @update:model-value="v => change_done(prop.node.id, v)"></QCheckbox>
                                 <div>{{prop.node.text}}</div>
                                 <QIcon style="cursor: pointer;" name="add" @click.stop="e => add_under(prop.node.id)"/>
-                                <QIcon style="cursor: pointer;" name="add_link" @click.stop="e => edit(prop.node.id)"/>
+                                <QIcon style="cursor: pointer;" name="add_link" @click.stop="e => link(prop.node.id)"/>
                                 <QIcon style="cursor: pointer;" name="delete" @click.stop="e => remove(prop.node.id)"/>
                             </div>
+                        </template>
+                        <template v-slot:body-note="note">
+                            <span>{{note.node.content}}</span>
+                        </template>
+                        <template v-slot:header-note="note">
+                            <QIcon name="link"></QIcon>
+                            <span>{{note.node.title}}</span>
                         </template>
                     </QTree>
                     <div v-else class="alternate-content">

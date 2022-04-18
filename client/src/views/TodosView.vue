@@ -7,8 +7,7 @@ import { QCard, QScrollArea} from 'quasar'
 <template>
 <StandardPageWrapper>
     <div class="todos-wrapper">
-        <TodosWidget></TodosWidget>
-        
+        <TodosWidget></TodosWidget>       
     </div>
 </StandardPageWrapper>
 </template>
@@ -18,11 +17,20 @@ import { QCard, QScrollArea} from 'quasar'
     display: grid;
     grid-template-columns: 1fr 40vw 1fr;
     grid-template-rows: 1fr 80vh 1fr;
+    grid-template-areas: ". . ." ". center ." ". . .";
     height: 100%;
     background: url("@/assets/comos.jpg");
 }
+
+@media(max-width: 720px) {
+    .todos-wrapper {
+        grid-template-columns: 1fr;
+        grid-template-rows: 1fr;
+        grid-template-areas: "center";
+    }
+}
+
 .todos-wrapper > * {
-    grid-column: 2/3;
-    grid-row: 2/3;
+    grid-area: center;
 }
 </style>

@@ -61,11 +61,12 @@ export class TypedDexie extends Dexie {
     oneshot_events!: Table<OneshotEvent>;
     repeating_events!: Table<RepeatingEvent>;
     notes!: Table<Note>;
-    link_todo_calendar!: Table<LinkTodoCalendar>
+    link_todo_calendar!: Table<LinkTodoCalendar>;
+    link_todo_notes!: Table<LinkTodoNotes>;
 
     constructor() {
         super('testdexie')
-        this.version(12).stores({
+        this.version(13).stores({
             todos: '++id',
             oneshot_events: '++id, date',
             repeating_events: '++id, weekday, repeats_start, repeats_end',
