@@ -154,7 +154,7 @@ async function remove(id: number) {
     opacity: 1;
 }
 .todos-wrap-card {
-    height: 80vh; 
+    height: 100%; 
     box-shadow: 0px 0px 20px 10px #000000d5;
     display: grid;
     grid-template-rows: 1fr max-content;
