@@ -142,6 +142,8 @@ async function main() {
                     for (let j = 0; j < data.deleted.notes.length; j++) {
                         if (deleted_notes[i]._id == data.deleted.notes[j]) {
                             is = true
+                            deleted_notes[i].category = "note"
+                            deleted_notes[i].action = "deleted"
                             break
                         }
                     }
@@ -154,7 +156,7 @@ async function main() {
                 await history_col.updateOne({ _id: user_history_id },
                     {
                         $addToSet: {
-                            notes: {
+                            history: {
                                 $each: deleted_notes
                             }
                         }
@@ -177,6 +179,8 @@ async function main() {
                 for (let i = 0; i < deleted_todo.length; i++) {
                     for (let j = 0; j < data.deleted.todo.length; j++) {
                         if (deleted_todo[i]._id == data.deleted.todo[j]) {
+                            deleted_todo[i].category = "todo"
+                            deleted_todo[i].action = "deleted"
                             is = true
                             break
                         }
@@ -190,7 +194,7 @@ async function main() {
                 await history_col.updateOne({ _id: user_history_id },
                     {
                         $addToSet: {
-                            todo: {
+                            history: {
                                 $each: deleted_todo
                             }
                         }
@@ -213,6 +217,8 @@ async function main() {
                 for (let i = 0; i < deleted_calendar.length; i++) {
                     for (let j = 0; j < data.deleted.calendar.length; j++) {
                         if (deleted_calendar[i]._id == data.deleted.calendar[j]) {
+                            deleted_todo[i].category = "calendar"
+                            deleted_todo[i].action = "deleted"
                             is = true
                             break
                         }
@@ -226,7 +232,7 @@ async function main() {
                 await history_col.updateOne({ _id: user_history_id },
                     {
                         $addToSet: {
-                            todo: {
+                            history: {
                                 $each: deleted_calendar
                             }
                         }
@@ -250,9 +256,11 @@ async function main() {
                 for (const item of data.modified.notes) {
                     for (var note of modified_notes) {
                         if (note._id == item._id) {
+                            note.category = "note"
+                            note.action = "modified"
                             await history_col.updateOne({ _id: user_history_id }, {
                                 $addToSet: {
-                                    notes: note
+                                    history: note
                                 }
                             })
                             break
@@ -272,9 +280,11 @@ async function main() {
                 for (const item of data.modified.todo) {
                     for (var todo of modified_todo) {
                         if (todo._id == item._id) {
+                            todo.category = "todo"
+                            todo.action = "modified"
                             await history_col.updateOne({ _id: user_history_id }, {
                                 $addToSet: {
-                                    todo: todo
+                                    history: todo
                                 }
                             })
                             break
@@ -295,9 +305,11 @@ async function main() {
                 for (const item of data.modified.notes) {
                     for (var calendar of modified_calendar) {
                         if (calendar._id == item._id) {
+                            calendar.category = "calendar"
+                            calendar.action = "modified"
                             await history_col.updateOne({ _id: user_history_id }, {
                                 $addToSet: {
-                                    calendar: calendar
+                                    history: calendar
                                 }
                             })
                             break
@@ -331,16 +343,28 @@ async function main() {
         const user_notes = (await users_col.findOne({ _id: userid })).notes || []
         const user_todo = (await users_col.findOne({ _id: userid })).todo || []
         const user_calendar = (await users_col.findOne({ _id: userid })).calendar || []
+        user_notes.forEach((note) => {
+            note.category = "note"
+            note.action = "upsync"
+        });
+        user_todo.forEach((todo) => {
+            todo.category = "todo"
+            todo.action = "upsync"
+        });
+        user_calendar.forEach((calendar) => {
+            calendar.category = "calendar"
+            calendar.action = "upsync"
+        });
 
         await history_col.updateOne({ _id: user_history_id },
             {
                 $addToSet:
                 {
-                    notes:
+                    history:
                         { $each: user_notes },
-                    todo:
+                    history:
                         { $each: user_todo },
-                    calendar:
+                    history:
                         { $each: user_calendar }
                 }
             })
@@ -368,8 +392,19 @@ async function main() {
         res.status(200).json({ notes: usernotes, todo: usertodo, calendar: usercalendar })
     })
 
-    app.get('/history', (req, res) => {
-        // ?
+    app.get('/history', async (req, res) => {
+        const data = req.body
+        if (!('usertoken' in data)) {
+            return res.status(400).json({ error: "You have to authenticate to save your data" })
+        }
+        const jwt = data.usertoken
+        const { payload, protectedHeader } = await jose.jwtVerify(jwt, publicKey, {
+            alg: 'PS256'
+        })
+        const username = payload.username
+        const history = (await history_col.findOne({ username })).history
+
+        res.status(200).json({history})
     })
 
     app.listen(port, () => {
