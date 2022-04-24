@@ -7,7 +7,7 @@ import { EZModalYesNo } from '@/ezmodals'
 import _ from 'lodash'
 import { useModalStack } from '@/stores/ModalStack'
 import CalendarCreateModal from './Modals/CalendarCreateEventModal.vue'
-import { QBtn, date, QBtnGroup } from 'quasar'
+import { QBtn, date, QBtnGroup, QScrollArea } from 'quasar'
 import CalendarViewEventModalVue from './Modals/CalendarViewEventModal.vue'
 
 const modalStack = useModalStack()
@@ -52,8 +52,6 @@ function computeStyle(event: RepeatingEvent | OneshotEvent) {
 	const beginOffsetTime = timeStart.value; // calendar starts at 8:00
 	const relStart = Math.ceil((event.time_start - beginOffsetTime)/10) + 3
 	const relEnd = Math.ceil((event.time_end - beginOffsetTime)/10) + 3
-
-	console.log(event)
 
 	const obj = {
 		"--weekday": event.type === "RepeatingEvent" ? event.weekday : event.date.getDay(), 
@@ -119,6 +117,7 @@ function openEventViewModal (event: AnyEvent) {
 </script>
 
 <template>
+	<QScrollArea style="height: 100%;">
 	<!-- <CalendarModal :is-open="modalOpen" @modalClose="modalOpen=false" @modal-ok="addNewEvent"></CalendarModal> -->
 	<QBtnGroup>
 		<QBtn color="primary" @click="openCreateModal">Add New Event</QBtn>
@@ -173,6 +172,7 @@ function openEventViewModal (event: AnyEvent) {
 			</TransitionGroup>
 		</div>
 	</div>
+	</QScrollArea>
 </template>
 
 
