@@ -12,6 +12,10 @@ import LinkFromTodoModalVue from './Modals/LinkFromTodoModal.vue';
 const $q = useQuasar()
 const todos = dynamicQuery(database.todos, [], table => table.toCollection())
 
+const props = defineProps<{
+    setTitle?: (title: string) => void
+}>()
+
 const tree : Ref<any[]> = ref([])
 
 watchEffect(() => {
@@ -99,6 +103,10 @@ async function remove(id: number) {
     if (await EZModalYesNo("Are you sure?", "Do you want to delete this todo?")) {
         DeleteTodo(id)
     }
+}
+
+if (props.setTitle) {
+    props.setTitle("Todos")
 }
 
 </script>

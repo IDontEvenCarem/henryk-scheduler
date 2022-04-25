@@ -15,6 +15,14 @@ const modalStack = useModalStack()
 const startOfWeek = date.startOfDate(date.subtractFromDate(new Date(), {day: date.getDayOfWeek(new Date())}), 'day')
 const endOfWeek = date.addToDate(startOfWeek, {day: 7})
 
+const props = defineProps<{
+    setTitle?: (title: string) => void
+}>()
+
+if (props.setTitle) {
+	props.setTitle("Calendar")
+}
+
 const repeatingEvents = dynamicQuery(database.repeating_events, [], table => 
 	table
 		.filter(e => (!e.repeats_start && !e.repeats_end) || date.isBetweenDates(startOfWeek, e.repeats_start as Date, e.repeats_end as Date))

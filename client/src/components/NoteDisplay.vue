@@ -58,12 +58,14 @@ function update(id: number) {
     <div v-else class="note-view">
         <h4>{{note?.title || "No title"}}</h4>
         <div v-html="note?.content || 'No content'"></div>
-        <hr>
-        <strong>Links:</strong>
-        <div v-for="t in todos" class="link">
-            <QIcon name="link"></QIcon>
-            <QCheckbox @update:model-value="update(t.id!)" :model-value="todo_completions" :val="t.id" color="positive"></QCheckbox>
-            <span>{{t.text}}</span>
+        <div v-if="todos.length > 0">
+            <hr>
+            <strong>Links:</strong>
+            <div v-for="t in todos" class="link">
+                <QIcon name="link"></QIcon>
+                <QCheckbox @update:model-value="update(t.id!)" :model-value="todo_completions" :val="t.id" color="positive"></QCheckbox>
+                <span>{{t.text}}</span>
+            </div>
         </div>
     </div>
 </template>
