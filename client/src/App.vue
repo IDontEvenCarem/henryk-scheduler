@@ -13,6 +13,8 @@ import { QBtn, QToolbar, QToolbarTitle, QLayout, QHeader, QPage, QPageContainer,
 // import TheWelcomeVue from './components/TheWelcome.vue';
 
 const host = ref<HTMLElement | undefined>(undefined)
+const page = ref<any>(undefined)
+const head = ref<any>(undefined)
 const ready = ref<boolean>(false)
 const value = ref(0)
 const tphidx = ref(0n)
@@ -40,8 +42,6 @@ function addComponent (component: Component, extras: object = {}) {
 function addComponentAfterSelected (component: Component, props: object = {}) {
   console.log(component)
   requestAnimationFrame(() => {
-    console.log("Ins")
-    console.log(glhr.value?.focusedComponentItem)
     if (fnInsertAfterFocused.value !== undefined) {
       const selfidx = tphidx.value
       tphidx.value = tphidx.value + 1n
@@ -60,6 +60,8 @@ function removeComponent (idx: bigint) {
 }
 
 onMounted(() => {
+  console.log("Hosting on")
+  console.log(host.value)
   const glhost = new GoldenLayout(host.value)
   
   glhost.registerComponentFactoryFunction('tphost', (container, state) => {
@@ -104,7 +106,6 @@ onMounted(() => {
   fnInsertAfterFocused.value = (state, focus = false) => {
     return glhost.addComponentAtLocation('tphost', state, undefined, [{typeId: 0, index: 1}, {typeId: 2}])
   }
-
   ready.value = true
   // @ts-ignore
   glhr.value = glhost
@@ -130,25 +131,44 @@ function setTitle (location: LayoutManager.Location | undefined) {
   }
 }
 
+function computeResize (size?: {width: number, height: number}) {
+  if (host.value !== undefined && page.value !== undefined && head.value !== undefined) {
+    const gsbr = host.value!.getBoundingClientRect()
+    glhr.value?.setSize(gsbr.width, window.innerHeight - host.value!.getBoundingClientRect().top)
+    glhr.value?.updateRootSize(true)
+  }
+}
+
+window.addEventListener("resize", ev => {
+  console.log('resize window')
+  computeResize()
+})
 </script>
 
 <template>
   <ModalStackDisplay></ModalStackDisplay>
-  <div v-if="elements.length === 0" class="background-alternative">
-    <div>
-      <h2 color="white">This should be hidden</h2>
-      <button>Open a tab</button>
-    </div>
-  </div>
-  <div class="whole-page">
-    <!-- <div class="header">
-      <QBtn color="white" text-color="black" @click="loggg">Focused item</QBtn>
-    </div> -->
-    <QToolbar color="primary">
-      <QToolbarTitle>Henryk</QToolbarTitle>
-    </QToolbar>
-    <div class="host" ref="host"></div>
-  </div>
+  <QLayout view="hHh lpr fFf" @resize="computeResize">
+    <QHeader ref="head">
+      <QToolbar>
+        <QToolbarTitle>Henryk</QToolbarTitle>
+        <QBtn flat @click="addComponent(NoteListVue)">Notes</QBtn>
+        <QBtn flat @click="addComponent(TodosWidgetVue)">Todos</QBtn>
+        <QBtn flat @click="addComponent(CalendarVue)">Calendar</QBtn>
+      </QToolbar>
+    </QHeader>
+    <QPageContainer>
+      <QPage ref="page">
+        <div v-if="elements.length === 0" class="background-alternative">
+          <div>
+            <h2 color="white">This should be hidden</h2>
+            <button>Open a tab</button>
+          </div>
+        </div>
+        <div class="host" ref="host"></div>
+      </QPage>
+    </QPageContainer>
+  </QLayout>
+  
   <div id="tp-source-store" v-if="ready">
     <Teleport v-for="pair in elements" :key="pair[1].toString()" :to="`#tphost-${pair[1]}`">
       <Component :is="pair[0]" v-bind="pair[2]" :setTitle="setTitle(pair[3])"></Component>
@@ -161,8 +181,7 @@ html,body {
     overflow: hidden;
 }
 .whole-page {
-  position: fixed;
-  width: 100vw;
+  /* width: 100vw; */
   height: 100vh;
   overflow: hidden;
   display: grid;
@@ -187,9 +206,13 @@ html,body {
 .host {
   width: 100%;
   height: 100%;
+  min-height: 100%;
   overflow: hidden;
 }
 .tphost {
+  height: 100%;
+}
+.q-page {
   height: 100%;
 }
 </style>
