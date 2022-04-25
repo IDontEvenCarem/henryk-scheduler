@@ -104,38 +104,36 @@ async function remove(id: number) {
 </script>
 
 <template>
-    <KeepAlive>
-        <QCard bordered class="todos-wrap-card">
-            <div class="whole-wrapper">
-                <QScrollArea style="height: 100%;">
-                    <QTree v-if="tree.length > 0" :nodes="tree" node-key="id" label-key="text" default-expand-all>
-                        <template v-slot:default-header="prop">
-                            <div class="todo-wrapper">
-                                <QCheckbox color="positive" :name="prop.node.id.toString()" :val="prop.node.id" :model-value="checked" @update:model-value="v => change_done(prop.node.id, v)"></QCheckbox>
-                                <div>{{prop.node.text}}</div>
-                                <QIcon style="cursor: pointer;" name="add" @click.stop="e => add_under(prop.node.id)"/>
-                                <QIcon style="cursor: pointer;" name="add_link" @click.stop="e => link(prop.node.id)"/>
-                                <QIcon style="cursor: pointer;" name="delete" @click.stop="e => remove(prop.node.id)"/>
-                            </div>
-                        </template>
-                        <template v-slot:body-note="note">
-                            <span>{{note.node.content}}</span>
-                        </template>
-                        <template v-slot:header-note="note">
-                            <QIcon name="link"></QIcon>
-                            <span>{{note.node.title}}</span>
-                        </template>
-                    </QTree>
-                    <div v-else class="alternate-content">
-                        <div>
-                            <h5 style="text-align: center;">No todos yet</h5>
+    <div class="todos-wrap-card">
+        <div class="whole-wrapper">
+            <QScrollArea style="height: 100%;">
+                <QTree v-if="tree.length > 0" :nodes="tree" node-key="id" label-key="text" default-expand-all>
+                    <template v-slot:default-header="prop">
+                        <div class="todo-wrapper">
+                            <QCheckbox color="positive" :name="prop.node.id.toString()" :val="prop.node.id" :model-value="checked" @update:model-value="v => change_done(prop.node.id, v)"></QCheckbox>
+                            <div>{{prop.node.text}}</div>
+                            <QIcon style="cursor: pointer;" name="add" @click.stop="e => add_under(prop.node.id)"/>
+                            <QIcon style="cursor: pointer;" name="add_link" @click.stop="e => link(prop.node.id)"/>
+                            <QIcon style="cursor: pointer;" name="delete" @click.stop="e => remove(prop.node.id)"/>
                         </div>
+                    </template>
+                    <template v-slot:body-note="note">
+                        <span>{{note.node.content}}</span>
+                    </template>
+                    <template v-slot:header-note="note">
+                        <QIcon name="link"></QIcon>
+                        <span>{{note.node.title}}</span>
+                    </template>
+                </QTree>
+                <div v-else class="alternate-content">
+                    <div>
+                        <h5 style="text-align: center;">No todos yet</h5>
                     </div>
-                </QScrollArea>
-            </div>
-            <QBtn color="primary" @click="add" style="margin: 10px;">Create todo</QBtn>
-        </QCard>
-    </KeepAlive>
+                </div>
+            </QScrollArea>
+        </div>
+        <QBtn color="primary" @click="add" style="margin: 10px;">Create todo</QBtn>
+    </div>
 </template>
 
 <style scoped>
@@ -155,7 +153,6 @@ async function remove(id: number) {
 }
 .todos-wrap-card {
     height: 100%; 
-    box-shadow: 0px 0px 20px 10px #000000d5;
     display: grid;
     grid-template-rows: 1fr max-content;
 }
