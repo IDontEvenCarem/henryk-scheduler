@@ -33,8 +33,8 @@ database.notes.get(parseInt(id as string)).then(lnote => {
             <h1 style="text-align: center;">Loading...</h1>
         </div>
         <div v-else>
-            <h1>{{note?.title}}</h1>
-            <div>{{note?.content}}</div>
+            <h3>{{note?.title || "No title"}}</h3>
+            <div v-html="note?.content || 'No content'"></div>
         </div>
     </StandardPageWrapper>
 </template>

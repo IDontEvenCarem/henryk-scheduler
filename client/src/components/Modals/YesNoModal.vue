@@ -13,7 +13,7 @@ const props = defineProps<{
 
 <template>
     <div class="modal-card">
-        <h2 v-if="props.title">{{props.title}}</h2>
+        <h6 v-if="props.title">{{props.title}}</h6>
         <p v-if="props.contents">{{props.contents}}</p>
         <br>
         <button @click="() => emit('closeModal', true)">Yes</button>
