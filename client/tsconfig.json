@@ -2,7 +2,7 @@
   "extends": "@vue/tsconfig/tsconfig.web.json",
   "include": ["env.d.ts", "src/**/*", "src/**/*.vue"],
   "compilerOptions": {
-    "lib": ["WebWorker", "ES2017"],
+    "lib": ["WebWorker", "ES2020"],
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]

@@ -17,7 +17,7 @@ const page = ref<any>(undefined)
 const head = ref<any>(undefined)
 const ready = ref<boolean>(false)
 const value = ref(0)
-const tphidx = ref(0n)
+const tphidx = ref(BigInt(0))
 const glhr = ref<GoldenLayout | undefined>(undefined)
 const elements : Ref<[any, bigint, object, LayoutManager.Location | undefined][]> = ref([])
 const fnInsertIntoGL = ref<undefined | ((state: object & {idx: bigint}) => LayoutManager.Location)>(undefined)
@@ -29,7 +29,7 @@ function addComponent (component: Component, extras: object = {}) {
   requestAnimationFrame(() => {    
     if (fnInsertIntoGL.value !== undefined) {
       const selfidx = tphidx.value
-      tphidx.value = tphidx.value + 1n
+      tphidx.value = tphidx.value + BigInt(1)
       const loc = fnInsertIntoGL.value({...extras, idx: selfidx})
       requestAnimationFrame(() => {
         elements.value = [...(elements.value), [markRaw(component), selfidx, extras, loc]]
@@ -44,7 +44,7 @@ function addComponentAfterSelected (component: Component, props: object = {}) {
   requestAnimationFrame(() => {
     if (fnInsertAfterFocused.value !== undefined) {
       const selfidx = tphidx.value
-      tphidx.value = tphidx.value + 1n
+      tphidx.value = tphidx.value + BigInt(1)
       const loc = fnInsertAfterFocused.value({...props, idx: selfidx})
       requestAnimationFrame(() => {
         elements.value = [...(elements.value), [markRaw(component), selfidx, props, loc]]
@@ -86,8 +86,7 @@ onMounted(() => {
 
   glhost.addEventListener('itemDestroyed', ev => {
     if('isComponent' in ev.target && (ev.target as any).isComponent) {
-      // @ts-ignore
-      const didx = BigInt(((ev.target as any).element as HTMLElement).querySelector('.tphost')?.id.substr('tphost-'.length))
+      const didx = BigInt(((ev.target as any).element as HTMLElement).querySelector('.tphost')?.id.substring('tphost-'.length) as string)
       removeComponent(didx)
     }
   })
