@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import TheWelcome from '@/components/TheWelcome.vue'
-import StandardPageWrapper from '../components/StandardPageWrapper.vue'
+import StandardPageWrapper from '@/components/StandardPageWrapper.vue'
+import Todos from '../components/TodosWidget.vue'
 </script>
 
 <template>
   <StandardPageWrapper>
     <main>
-      <TheWelcome />
+      <Todos></Todos>
     </main>
   </StandardPageWrapper>
 </template>

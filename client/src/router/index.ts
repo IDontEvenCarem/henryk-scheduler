@@ -32,6 +32,31 @@ const router = createRouter({
       path: '/todos',
       name: 'todo',
       component: TodosViewVue
+    },
+    {
+      path: '/calendar',
+      name: 'calendar',
+      component: () => import('@/views/CalendarView.vue')
+    },
+    {
+      path: '/notes/list',
+      name: 'noteList',
+      component: () => import('@/views/notes/NoteListView.vue'),
+    },
+    {
+      path: '/notes/create',
+      name: 'noteCreate',
+      component: () => import('@/views/notes/NoteCreateView.vue'),
+    },
+    {
+      path: '/notes/edit/:id',
+      name: 'noteEdit',
+      component: () => import('@/views/notes/NoteCreateView.vue'),
+    },
+    {
+      path: '/notes/view/:id',
+      name: 'noteView',
+      component: () => import('@/views/notes/NoteView.vue')
     }
     // {
     //   path: '/about',

@@ -1,7 +1,8 @@
 <script lang="ts" setup>
 import {RouterLink} from 'vue-router'
 import {useUserStore} from '@/stores/User'
-import { onMounted } from 'vue';
+import { onMounted, ref} from 'vue';
+import { QBar, QBtn } from 'quasar'
 
 const user = useUserStore();
 onMounted(() => {
@@ -16,20 +17,21 @@ function OnLogout() {
 
 <template>
     <div class="page-layout-wrapper">
-        <nav>
-            <RouterLink to="/">Home</RouterLink>
-            <RouterLink to="/about">About</RouterLink>
-            <RouterLink to="/todos">Todos</RouterLink>
+        <QBar class="bg-primary">
+            <div><RouterLink to="/">Home</RouterLink></div>
+            <div><RouterLink to="/about">About</RouterLink></div>
+            <div><RouterLink to="/todos">Todos</RouterLink></div>
+            <div><RouterLink to="/calendar">Calendar</RouterLink></div>
+            <div><RouterLink to="/notes/list">Notes</RouterLink></div>
             <div v-if="user.loggedIn">
                 Logged in as {{user.username}}
                 <a @click="OnLogout" href="#">Log out</a>
             </div>
             <template v-else>
-                <RouterLink to="/login">Log in</RouterLink>
-                <RouterLink to="/register">Register</RouterLink>
+                <div><RouterLink to="/login">Log in</RouterLink></div>
+                <div><RouterLink to="/register">Register</RouterLink></div>
             </template>
-
-        </nav>
+        </QBar>
 
         <main>
             <slot></slot>
@@ -39,21 +41,8 @@ function OnLogout() {
 
 <style scoped>
     .page-layout-wrapper {
-        /* for now just a dummy declaration, also makes it wide */
+        min-height: 100vh;
         display: grid;
-        grid-template-columns: auto;
-        grid-template-rows: auto;
-    }
-
-    nav {
-        display: flex;
-        flex-direction: row;
-    }
-    nav > * {
-        padding: 1ch;
-    }
-
-    main {
-        padding: 1ch;
+        grid-template-rows: max-content 1fr;
     }
 </style>

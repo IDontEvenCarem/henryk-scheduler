@@ -12,7 +12,7 @@ const todos = dynamicQuery(
     [from, to, done],
     (table, from, to, done) => table
         .where('id')
-        .between(from, to, true, true)
+        .between(from, to)
         .filter(todo => done == 'null' || (todo.done && done == 'yes') || (!todo.done && done == 'no'))
 )
 
@@ -41,58 +41,90 @@ function onDeleteTodo (todo: Todo) {
 
 <template>
     <div class="todo-app-element-wrapper">
-        <h2>Todos:</h2>
-        <div class="settings">
-            <label>Od:</label>
-            <input type="number" v-model="from" />
-            <label>Do:</label>
-            <input type="number" v-model="to" />
-            <label>Zrobione:</label>
-            <select v-model="done">
-                <option value="yes">Tak</option>
-                <option value="no">Nie</option>
-                <option value="null">Oba</option>
-            </select>
-        </div>
-        <input type="text" v-model="text" />
-        <button @click="onAddTodo">Add todo:</button>
-        <div class="todo-wrapper">
-            <div class="todo-element" :class="{'todo-done' : todo.done}" v-for="todo in todos" :key="todo.id">
-                <input type="checkbox" :checked="todo.done" @change="onToggleTodo(todo)">
-                {{ todo.text }}
-                <p @click="onDeleteTodo(todo)" class="thrashcan">🗑️</p>
+        <div class="TodoStructure">
+            <div class="Header">
+                <h2>Your todo list:</h2>
+            </div>
+            <strong>Display range:</strong>
+            <div class="settings">
+                <label>From:</label>
+                <input type="number" v-model="from" />
+                <label>To:</label>
+                <input type="number" v-model="to" />
+                <label>Things done:</label>
+                <select v-model="done">
+                    <option value="yes">Tak</option>
+                    <option value="no">Nie</option>
+                    <option value="null">Oba</option>
+                </select>
+            </div>
+            <input type="text" v-model="text" />
+            <button @click="onAddTodo">Add todo:</button>
+            <div class="todo-wrapper">
+                <div class="todo-element" :class="{'todo-done' : todo.done}" v-for="todo in todos" :key="todo.id" @click="onToggleTodo(todo)">
+                    <span>{{ todo.text }}</span>
+                    <p @click="onDeleteTodo(todo)" class="thrashcan">🗑️</p>
+                </div>
             </div>
         </div>
     </div>
 </template>
 
 <style scoped>
+.TodoStructure
+{
+    display: grid;
+	grid-template-columns: auto;
+	grid-template-rows: auto;
+	background-color: white;
+    color: black;
+}
+.Header
+{
+    text-align: center;
+}
 .todo-app-element-wrapper {
     margin: 1ch;
 }
 
 .settings {
+    margin: 5px;
     display: grid;
+    font-size: 17px;
     grid-template-columns: auto auto;
 }
 
 .todo-element {
     margin: 5px;
     padding: 5px;
-    background-color: lightcoral;
+    background-color: rgba(255, 255, 255, 0.3);
     color: black;
     border-radius: 5px;
     font-size: 1.1rem;
     transition: background-color 100ms ease;
     display: grid;
-    grid-template-columns: min-content auto min-content;
+    grid-template-columns: auto min-content;
 }
 
 .todo-done {
-    background-color: lightgreen;
+    background-color: rgb(144, 238, 144);
+    background-color: rgba(0, 255, 42, 0.5);
 }
 
 .thrashcan {
     cursor: pointer;
+}
+
+.todo-wrapper
+{
+    display: grid;
+	grid-template-columns: auto;
+	grid-template-rows: auto;
+	background-color: gray;
+}
+input[type=text]
+{
+    margin: 5px;
+    padding: 5px;
 }
 </style>
