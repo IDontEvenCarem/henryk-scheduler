@@ -11,6 +11,7 @@ import {InsertAfterThisKey, AddComponentAfterFocusedKey} from '@/injections'
 import { QBtn, QToolbar, QToolbarTitle, QLayout, QHeader, QPage, QPageContainer, QFooter } from 'quasar';
 import { useModalStack } from './stores/ModalStack';
 import LoginModalVue from './components/Modals/LoginModal.vue';
+import RegisterModalVue from './components/Modals/RegisterModal.vue';
 import { result } from 'lodash';
 // import HelloWorldVue from './components/HelloWorld.vue';
 // import TheWelcomeVue from './components/TheWelcome.vue';
@@ -150,7 +151,11 @@ window.addEventListener("resize", ev => {
 function openLoginModal()
 {
   modalStack.push(LoginModalVue, {}, true, (canceled, result) => {})
-  
+}
+
+function openRegisterModal()
+{
+  modalStack.push(RegisterModalVue, {}, true, (canceled, result) => {})
 }
 </script>
 
@@ -164,6 +169,7 @@ function openLoginModal()
         <QBtn flat @click="addComponent(TodosWidgetVue)">Todos</QBtn>
         <QBtn flat @click="addComponent(CalendarVue)">Calendar</QBtn>
         <QBtn flat @click="openLoginModal">Login</QBtn>
+        <QBtn flat @click="openRegisterModal">Register</QBtn>
       </QToolbar>
     </QHeader>
     <QPageContainer>
