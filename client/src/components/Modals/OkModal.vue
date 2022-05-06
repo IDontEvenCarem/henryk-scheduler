@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import {} from 'vue'
-
 const emit = defineEmits<{
     (e: 'closeModal'): void
 }>();
