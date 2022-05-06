@@ -9,6 +9,9 @@ import CalendarVue from './components/Calendar.vue';
 import ModalStackDisplay from './components/ModalStackDisplay.vue';
 import {InsertAfterThisKey, AddComponentAfterFocusedKey} from '@/injections'
 import { QBtn, QToolbar, QToolbarTitle, QLayout, QHeader, QPage, QPageContainer, QFooter } from 'quasar';
+import { useModalStack } from './stores/ModalStack';
+import LoginModalVue from './components/Modals/LoginModal.vue';
+import { result } from 'lodash';
 // import HelloWorldVue from './components/HelloWorld.vue';
 // import TheWelcomeVue from './components/TheWelcome.vue';
 
@@ -22,6 +25,7 @@ const glhr = ref<GoldenLayout | undefined>(undefined)
 const elements : Ref<[any, bigint, object, LayoutManager.Location | undefined][]> = ref([])
 const fnInsertIntoGL = ref<undefined | ((state: object & {idx: bigint}) => LayoutManager.Location)>(undefined)
 const fnInsertAfterFocused = ref<undefined | ((state: object & {idx: bigint}, focus?: boolean) => LayoutManager.Location | undefined)>(undefined)
+const modalStack = useModalStack()
 
 provide(AddComponentAfterFocusedKey, addComponentAfterSelected)
 
@@ -142,6 +146,12 @@ window.addEventListener("resize", ev => {
   console.log('resize window')
   computeResize()
 })
+
+function openLoginModal()
+{
+  modalStack.push(LoginModalVue, {}, true, (canceled, result) => {})
+  
+}
 </script>
 
 <template>
@@ -153,6 +163,7 @@ window.addEventListener("resize", ev => {
         <QBtn flat @click="addComponent(NoteListVue)">Notes</QBtn>
         <QBtn flat @click="addComponent(TodosWidgetVue)">Todos</QBtn>
         <QBtn flat @click="addComponent(CalendarVue)">Calendar</QBtn>
+        <QBtn flat @click="openLoginModal">Login</QBtn>
       </QToolbar>
     </QHeader>
     <QPageContainer>
