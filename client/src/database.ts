@@ -19,7 +19,6 @@ export interface Todo {
 
 export interface OneshotEvent {
     id?: number,
-    type: "Event",
     name: string,
     date: Date,
     time_start: number,
@@ -31,7 +30,6 @@ export interface OneshotEvent {
 
 export interface RepeatingEvent {
     id?: number,
-    type: "RepeatingEvent",
     name: string,
     room: string,
     teacher: string,
@@ -69,7 +67,7 @@ export class TypedDexie extends Dexie {
 
     constructor() {
         super('testdexie')
-        this.version(16).stores({
+        this.version(17).stores({
             todos: '++id',
             oneshot_events: '++id, date',
             repeating_events: '++id, weekday, repeats_start, repeats_end',
@@ -132,7 +130,7 @@ export async function AddTodo (text: string, parent_id: number | undefined = und
 }
 
 export async function AddRepeatingEvent (name: string, color: string, weekday: number, time_start: number, time_end: number) {
-    return database.repeating_events.add({name, color, weekday, time_end, time_start, room: "", teacher: "", type: 'RepeatingEvent'})
+    return database.repeating_events.add({name, color, weekday, time_end, time_start, room: "", teacher: ""})
 }
 
 export async function UpdateRepeatingEvent(id: number, update: Partial<RepeatingEvent>) {

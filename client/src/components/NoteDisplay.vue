@@ -35,6 +35,9 @@ GetWithLinks({kind: 'Note', id: props.id}).then(value => {
     note.value = value.value as Note
     links.value = value.linked
     state.value = 'ok'
+    if (props.setTitle) {
+        props.setTitle((value.value as Note).title)
+    }
 }).catch(err => {
     state.value = 'error'
 })
