@@ -47,7 +47,7 @@ watchEffect(() => {
         const linked_notes = await database.link_todo_notes.where('todo_id').equals(treeEntry.id!).toArray()
         const local = Promise.all(linked_notes.map(link => database.notes.where('id').equals(link.note_id).toArray()))
         const child = Promise.all((treeEntry.children||[]).map(insert_links))
-        if (treeEntry.children) treeEntry.children.unshift(...(await local).map(v => ({...v[0], body: 'note', header: 'note'})))
+        if (treeEntry.children) treeEntry.children.unshift(...(await local).map(v => ({...v[0], body: 'note', header: 'note', id: v[0].id!+'n'})))
         await child
     }
 
