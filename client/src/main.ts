@@ -9,7 +9,6 @@ import 'golden-layout/src/less/goldenlayout-base.less'
 // import '../node_modules/golden-layout/dist/css/themes/goldenlayout-base.css'
 
 import App from './App.vue'
-import router from './router'
 
 const app = createApp(App)
 
@@ -17,6 +16,4 @@ app.use(createPinia())
 app.use(Quasar, {
     plugins: {Dialog}
 })
-app.use(router)
-
 app.mount('#app')

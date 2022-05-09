@@ -3,7 +3,7 @@ import type {Table} from 'dexie'
 import type { Change } from './common'
 import _ from 'lodash'
 
-type ThingName = "ScheduleEvent" | "OneshotEvent" | "Todo" | "Note";
+export type ThingName = "ScheduleEvent" | "OneshotEvent" | "Todo" | "Note";
 
 export interface ID {
     kind: ThingName,
@@ -51,7 +51,7 @@ export interface Note {
 }
 
 type AnyThing = Note | RepeatingEvent | OneshotEvent | Todo
-type ReplacedID<T> = Omit<T, 'id'> & {id: ID}
+export type ReplacedID<T> = Omit<T, 'id'> & {id: ID}
 
 export interface Link {
     from: "ScheduleEvent" | "OneshotEvent" | "Todo" | "Note",
@@ -126,8 +126,9 @@ export async function AlterOneshotEvent (change: Change<OneshotEvent>) {
     }
 }
 
-export async function AddTodo (text: string, parent_id: number | undefined = undefined) : Promise<number> {
-    return (await database.todos.add({text, done: false, parent_id})) as number
+export async function AddTodo (text: string, parent_id: number | undefined = undefined) : Promise<ID> {
+    const resp = await database.todos.add({text, done: false, parent_id})
+    return {kind: 'Todo', id: parseInt(resp.toString())}
 }
 
 export async function AddRepeatingEvent (name: string, color: string, weekday: number, time_start: number, time_end: number) {

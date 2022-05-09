@@ -2,7 +2,7 @@
 import {useQuasar ,QTree, QBtn, QCheckbox, QIcon, QCard, QScrollArea} from 'quasar'
 import {dynamicQuery, database} from '@/dbintegration'
 import { computed } from '@vue/reactivity';
-import { type Todo, AddTodo, ToggleTodo, DeleteTodo} from '@/database';
+import { type Todo, AddTodo, ToggleTodo, DeleteTodo, Link} from '@/database';
 import {ref, watchEffect} from 'vue'
 import type {Ref} from 'vue'
 import CreateTodoQModalVue from './Modals/CreateTodoQModal.vue';
@@ -47,12 +47,12 @@ watchEffect(() => {
 
     // step three - add linked entities
     async function insert_links (treeEntry : Todo & {children: any[]}) {
-        const linked_notes = await database.link_todo_notes.where('todo_id').equals(treeEntry.id!).toArray()
-        const local = Promise.all(linked_notes.map(link => database.notes.where('id').equals(link.note_id).toArray()))
-        const child = Promise.all((treeEntry.children||[]).map(insert_links))
-        if (treeEntry.children) treeEntry.children.unshift(...(await local).map(v =>
-            ({...v[0], id: 'n' + v[0].id, body: 'note', header: 'note'})))
-        await child
+        // const linked_notes = await database.link_todo_notes.where('todo_id').equals(treeEntry.id!).toArray()
+        // const local = Promise.all(linked_notes.map(link => database.notes.where('id').equals(link.note_id).toArray()))
+        // const child = Promise.all((treeEntry.children||[]).map(insert_links))
+        // if (treeEntry.children) treeEntry.children.unshift(...(await local).map(v =>
+            // ({...v[0], id: 'n' + v[0].id, body: 'note', header: 'note'})))
+        // await child
     }
 
     Promise.all(roots.map(root => insert_links(root))).then(_ => {
@@ -88,10 +88,12 @@ function add_under(id: number) {
 }
 
 function link(id: number) {
-    modalStack.push(LinkFromTodoModalVue, {todo_id: id}, true, (canceled, result) => {
+    modalStack.push(LinkFromTodoModalVue as any, {todo_id: id}, true, (canceled, result) => {
         if (!canceled) {
-            return
-            database.link_todo_notes.add({note_id: payload, todo_id: id})
+            const [canceled, l_type, l_id] = result as any
+            console.log(result)
+            
+            // database.link_todo_notes.add({note_id: payload, todo_id: id})
         }
     })
 }

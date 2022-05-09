@@ -9,6 +9,7 @@ import CalendarVue from './components/Calendar.vue';
 import ModalStackDisplay from './components/ModalStackDisplay.vue';
 import {InsertAfterThisKey, AddComponentAfterFocusedKey} from '@/injections'
 import { QBtn, QToolbar, QToolbarTitle, QLayout, QHeader, QPage, QPageContainer, QFooter } from 'quasar';
+import DebugVue from './components/Windows/Debug.vue';
 // import HelloWorldVue from './components/HelloWorld.vue';
 // import TheWelcomeVue from './components/TheWelcome.vue';
 
@@ -114,6 +115,7 @@ onMounted(() => {
     addComponent(TodosWidgetVue)
     addComponent(NoteListVue)
     addComponent(CalendarVue)
+    addComponent(DebugVue)
 })
 
 function loggg () {

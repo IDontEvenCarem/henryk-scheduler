@@ -5,6 +5,7 @@ import SelectNoteModalVue from './SelectNoteModal.vue';
 
 import {database} from '@/dbintegration'
 import { useModalStack } from '@/stores/ModalStack';
+import { onMounted } from 'vue';
 
 const modalStack = useModalStack()
 
@@ -28,6 +29,8 @@ function note () {
 
 function event () {
 }
+
+onMounted(() => {})
 
 </script>
 
