@@ -7,9 +7,10 @@ import TodosWidgetVue from './components/TodosWidget.vue';
 import NoteListVue from './components/NoteList.vue'
 import CalendarVue from './components/Calendar.vue';
 import ModalStackDisplay from './components/ModalStackDisplay.vue';
-import {InsertAfterThisKey, AddComponentAfterFocusedKey} from '@/injections'
+import {InsertAfterThisKey, AddComponentAfterFocusedKey, CloseFocusedWindowKey} from '@/injections'
 import { QBtn, QToolbar, QToolbarTitle, QLayout, QHeader, QPage, QPageContainer, QFooter } from 'quasar';
 import DebugVue from './components/Windows/Debug.vue';
+import NoteListWindowVue from './components/Windows/NoteListWindow.vue';
 // import HelloWorldVue from './components/HelloWorld.vue';
 // import TheWelcomeVue from './components/TheWelcome.vue';
 
@@ -25,6 +26,7 @@ const fnInsertIntoGL = ref<undefined | ((state: object & {idx: bigint}) => Layou
 const fnInsertAfterFocused = ref<undefined | ((state: object & {idx: bigint}, focus?: boolean) => LayoutManager.Location | undefined)>(undefined)
 
 provide(AddComponentAfterFocusedKey, addComponentAfterSelected)
+provide(CloseFocusedWindowKey, closeFocusedComponent)
 
 function addComponent (component: Component, extras: object = {}) {
   requestAnimationFrame(() => {    
@@ -53,6 +55,10 @@ function addComponentAfterSelected (component: Component, props: object = {}) {
       return selfidx
     }
   })
+}
+
+function closeFocusedComponent () {
+  glhr.value?.focusedComponentItem?.close();
 }
 
 function removeComponent (idx: bigint) {
@@ -152,7 +158,7 @@ window.addEventListener("resize", ev => {
     <QHeader ref="head">
       <QToolbar>
         <QToolbarTitle>Henryk</QToolbarTitle>
-        <QBtn flat @click="addComponent(NoteListVue)">Notes</QBtn>
+        <QBtn flat @click="addComponent(NoteListWindowVue)">Notes</QBtn>
         <QBtn flat @click="addComponent(TodosWidgetVue)">Todos</QBtn>
         <QBtn flat @click="addComponent(CalendarVue)">Calendar</QBtn>
       </QToolbar>
