@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useDialogPluginComponent, QDialog, QCard, QBtn, QBtnGroup, QScrollArea, QToolbar, QToolbarTitle, QList, QItem, QItemSection, QItemLabel } from 'quasar'
 import { dynamicQuery, database } from '@/dbintegration'
-import { ref, watchEffect } from 'vue'
+import { getCurrentInstance, ref, watch, watchEffect } from 'vue'
 
 const emit = defineEmits<{
     (e: 'closeModal', selected?: number): void
@@ -13,6 +13,15 @@ const props = defineProps<{
 }>()
 
 const notes = dynamicQuery(database.notes, [], table => table.toCollection())
+const instance = getCurrentInstance();
+watchEffect(() => {
+    try {
+        instance?.proxy?.$forceUpdate();
+    } catch {
+        console.log("Failed to forceUpdate")
+    }
+    notes.value.length
+})
 const selected = ref(-1)
 
 </script>
