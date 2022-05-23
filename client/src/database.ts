@@ -67,12 +67,12 @@ export class TypedDexie extends Dexie {
 
     constructor() {
         super('testdexie')
-        this.version(17).stores({
+        this.version(18).stores({
             todos: '++id',
             oneshot_events: '++id, date',
             repeating_events: '++id, weekday, repeats_start, repeats_end',
             notes: '++id, title',
-            link: '++, [from+from_id], [to+to_id]'
+            link: '++, [from+from_id], [to+to_id], from_id, to_id'
         })
     }
 }
@@ -218,22 +218,22 @@ export async function GetWithLinks (id: ID, exclusions: ID[] = []) {
     // links where this is the 'to' side
     const links_incomming = await database.link
         .where('[to+to_id]').equals([id.kind, id.id])
-        .filter(link => exclusions.some(excluded => excluded.kind === link.to && excluded.id === link.to_id))
+        .filter(link => !exclusions.some(excluded => excluded.kind === link.to && excluded.id === link.to_id))
         .toArray()
     // links where this is the 'from' side
     const links_outgoing = await database.link
         .where('[from+from_id]').equals([id.kind, id.id])
-        .filter(link => exclusions.some(excluded => excluded.kind === link.from && excluded.id === link.from_id))
+        .filter(link => !exclusions.some(excluded => excluded.kind === link.from && excluded.id === link.from_id))
         .toArray()
 
-    // making this perform bulk ops would probably be better, but harder. maybe have a GetMany function?
+        // making this perform bulk ops would probably be better, but harder. maybe have a GetMany function?
     const entities_outgoing : ReplacedID<Todo | RepeatingEvent | Note | OneshotEvent>[] = await Promise.all(
         links_outgoing.map(link => 
             Get({id: link.to_id, kind: link.to})
                 .then(value => ({...value, id: {id: link.to_id, kind: link.to}})))
     )
     const entities_incomming : ReplacedID<Todo | RepeatingEvent | Note | OneshotEvent>[] = await Promise.all(
-        links_outgoing.map(link => 
+        links_incomming.map(link => 
             Get({id: link.from_id, kind: link.from})
                 .then((value) => ({...value, id: {id: link.from_id, kind: link.from}})))
     )

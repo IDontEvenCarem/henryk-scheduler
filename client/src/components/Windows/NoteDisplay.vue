@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import {ref, watchEffect, type Ref} from 'vue'
-import { database, GetWithLinks, ToggleTodo, type Note, type OneshotEvent, type RepeatingEvent, type ReplacedID } from '@/database';
+import { database, GetWithLinks, ToggleTodo, type Note, type OneshotEvent, type RepeatingEvent, type ThingName } from '@/database';
+import type { ReplacedID } from '@/database'
 import type { Todo } from '@/dbintegration';
 import { computed } from '@vue/reactivity';
-import { QIcon, QCheckbox } from 'quasar'
+import { QIcon, QCheckbox, QBtn, QBtnGroup, QScrollArea} from 'quasar'
 
 const props = defineProps<{
     id: number,
@@ -31,9 +32,14 @@ if (props.setTitle) {
     props.setTitle("Note".padEnd(25, ' '))
 }
 
+const sortorder : Record<ThingName, number> = {Todo: 0, Note: 1, OneshotEvent: 2, ScheduleEvent: 3}
+
 GetWithLinks({kind: 'Note', id: props.id}).then(value => {
+    console.log("== NoteDisplay.vue ==")
+    console.log(value.linked)
     note.value = value.value as Note
     links.value = value.linked
+    links.value.sort((l, r) => (sortorder[l.id.kind] < sortorder[r.id.kind]) as unknown as number - 0.5)
     state.value = 'ok'
     if (props.setTitle) {
         props.setTitle((value.value as Note).title)
@@ -69,22 +75,35 @@ function update(id: number) {
     <div v-else-if="state == 'loading'">
         <h1 style="text-align: center;">Loading...</h1>
     </div>
-    <div v-else class="note-view">
-        <h4>{{note?.title || "No title"}}</h4>
-        <div v-html="note?.content || 'No content'"></div>
-        <div v-for="link in links" :key="link.id.toString()">
-
-        </div>
-        <!-- <div v-if="todos.length > 0">
+    <QScrollArea v-else style="width: var(--gl-width); height: var(--gl-height);">
+        <div class="note-view">
+            <h4>{{note?.title || "No title"}} </h4>
+            <div v-html="note?.content || 'No content'"></div>
             <hr>
-            <strong>Links:</strong>
-            <div v-for="t in todos" class="link">
-                <QIcon name="link"></QIcon>
-                <QCheckbox @update:model-value="update(t.id!)" :model-value="todo_completions" :val="t.id" color="positive"></QCheckbox>
-                <span>{{t.text}}</span>
+            <div>
+                <p><strong>Links:</strong> <strong v-if="links.length === 0">None yet</strong></p>
+                <div v-for="link in links" :key="link.id.toString()">
+                    <div v-if="link.id.kind === 'Todo'">
+                        {{(link as ReplacedID<Todo>).done}}
+                    </div>
+                    <div v-else-if="link.id.kind === 'Note'">
+                        NOTE
+                    </div>
+                    <div v-else-if="link.id.kind === 'OneshotEvent'">
+                        ONESHOTEVENT
+                    </div>
+                    <div v-else-if="link.id.kind === 'ScheduleEvent'">
+                        ScheduleEvent
+                    </div>
+                </div>
+                <QBtnGroup flat>
+                    <QBtn flat color="primary">Add Link</QBtn>
+                    <QBtn flat color="primary">Edit</QBtn>
+                    <QBtn flat color="negative">Delete</QBtn>
+                </QBtnGroup>
             </div>
-        </div> -->
-    </div>
+        </div>
+    </QScrollArea>
 </template>
 
 <style scoped>

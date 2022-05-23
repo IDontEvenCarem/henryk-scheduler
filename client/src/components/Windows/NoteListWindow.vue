@@ -1,23 +1,37 @@
 <script setup lang="ts">
-import { QList, QScrollArea, QBtn, QInput } from 'quasar'
+import { QList, QItem, QItemSection, QItemLabel, QScrollArea, QBtn, QInput } from 'quasar'
 import { AddComponentAfterFocusedKey } from '@/injections'
 import { inject, ref } from 'vue'
 import { dynamicQuery } from '@/dbintegration'
-import { database } from '@/database';
+import { database, type Note } from '@/database';
 import NoteCreateWindowVue from './NoteCreateWindow.vue';
+import NoteDisplayVue from './NoteDisplay.vue';
 
 const props = defineProps<{
     setTitle: (title: string) => void,
 }>()
 
+function SearchInNote (needle: string, note: Note) {
+    const regex = new RegExp(needle, 'igm')
+    return (note.title.search(regex) !== -1) || (note.content.search(regex) !== -1)
+}
+
+function RemoveTags (text: string) {
+    return text.replace(/\<\/?\w+( [^\>]+)?\>/igm, '')
+}
+
+function ShortenText (max_len: number, text: string) {
+    if (text.length < max_len) {
+        return text
+    } else {
+        return text.substring(0, max_len) + '...'
+    }
+}
+
 const iat = inject(AddComponentAfterFocusedKey)
 const searchtext = ref("")
 const query = dynamicQuery(database.notes, [searchtext], 
-    (table, search) => table.filter(
-        note => 
-            note.title.search(new RegExp(search, "igm")) !== -1
-            || note.content.search(new RegExp(search, "igm")) !== -1
-    )
+    (table, search) => table.filter(note => SearchInNote(search, note))
 )
 
 props.setTitle("Notes")
@@ -28,22 +42,35 @@ function CreateNote () {
     }
 }
 
-function RemoveTags (text: string) {
-    return text
+function ViewNote (note: Note) {
+    if (iat !== undefined) {
+        iat(NoteDisplayVue, {id: note.id})
+    }
 }
+
+const shouldShortenText = true
 
 </script>
 
-<template>
+<template> 
     <div class="wrapper">
         <QInput v-model="searchtext" label="Search"></QInput>
         <QScrollArea>
-            <TransitionGroup>
-                <div v-for="note in query" :key="note.id">
-                    <strong>{{note.title}}</strong>
-                    <p>{{RemoveTags(note.content)}}</p>
-                </div>
-            </TransitionGroup>
+            <QList>
+                <TransitionGroup>
+                    <QItem clickable @click="ViewNote(note)" v-for="note in query" :key="note.id">
+                        <QItemSection>
+                            <QItemLabel>
+                                <strong>{{note.title || "<No title>"}}</strong>
+                            </QItemLabel>
+                            <QItemLabel caption>
+                                <p v-if="shouldShortenText">{{ShortenText(256, RemoveTags(note.content))}}</p>
+                                <p v-else>{{RemoveTags(note.content)}}</p>
+                            </QItemLabel>
+                        </QItemSection>
+                    </QItem>
+                </TransitionGroup>
+            </QList>
         </QScrollArea>
         <QBtn color="primary" @click="CreateNote">Create Note</QBtn>
     </div>

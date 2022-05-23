@@ -6,11 +6,12 @@ import SelectNoteModalVue from './SelectNoteModal.vue';
 import {database} from '@/dbintegration'
 import { useModalStack } from '@/stores/ModalStack';
 import { onMounted } from 'vue';
+import { Link } from '@/database';
 
 const modalStack = useModalStack()
 
 const emit = defineEmits<{
-    (e: 'closeModal', canceled_propagate: boolean, to?: 'note' | 'event', id?: number): void
+    (e: 'closeModal', canceled_propagate: boolean): void
 }>();
 
 const props = defineProps<{
@@ -19,11 +20,12 @@ const props = defineProps<{
 
 function note () {
     modalStack.push(SelectNoteModalVue, {}, true, (canceled, [selectedId]) => {
-        if (canceled) {
-            emit('closeModal', true)
-        } else {
-            emit('closeModal', false, 'note', selectedId)
-        }
+        if (canceled || selectedId === undefined) {
+            return emit('closeModal', true)
+        } 
+
+        Link({kind: 'Todo', id: props.todo_id}, {kind: 'Note', id: selectedId})
+        return emit('closeModal', true)
     })
 }
 

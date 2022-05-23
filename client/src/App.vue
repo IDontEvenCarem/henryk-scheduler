@@ -115,11 +115,20 @@ onMounted(() => {
   ready.value = true
   // @ts-ignore
   glhr.value = glhost
+
+  glhost.addEventListener('resize', () => {
+    console.log("resize triggered")
+  })
+
+  glhost.addEventListener('itemDropped', ev => {
+    ev.element.style.setProperty('--gl-width', ev.element.style.width)
+    ev.element.style.setProperty('--gl-height', ev.element.style.height)
+  })
 })
 
 onMounted(() => {
     addComponent(TodosWidgetVue)
-    addComponent(NoteListVue)
+    addComponent(NoteListWindowVue)
     addComponent(CalendarVue)
     addComponent(DebugVue)
 })
@@ -143,6 +152,11 @@ function computeResize (size?: {width: number, height: number}) {
     const gsbr = host.value!.getBoundingClientRect()
     glhr.value?.setSize(gsbr.width, window.innerHeight - host.value!.getBoundingClientRect().top)
     glhr.value?.updateRootSize(true)
+    document.querySelectorAll(".lm_items").forEach(elem => {
+      const helem = (elem as HTMLElement)
+      helem.style.setProperty('--gl-width', helem.style.width)
+      helem.style.setProperty('--gl-height', helem.style.height)
+    })
   }
 }
 

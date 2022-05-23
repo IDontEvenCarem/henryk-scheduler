@@ -2,7 +2,7 @@
 import {useQuasar ,QTree, QBtn, QCheckbox, QIcon, QCard, QScrollArea} from 'quasar'
 import {dynamicQuery, database} from '@/dbintegration'
 import { computed } from '@vue/reactivity';
-import { type Todo, AddTodo, ToggleTodo, DeleteTodo, Link} from '@/database';
+import { type Todo, AddTodo, ToggleTodo, DeleteTodo, Link, Delete} from '@/database';
 import {ref, watchEffect} from 'vue'
 import type {Ref} from 'vue'
 import CreateTodoQModalVue from './Modals/CreateTodoQModal.vue';
@@ -88,19 +88,12 @@ function add_under(id: number) {
 }
 
 function link(id: number) {
-    modalStack.push(LinkFromTodoModalVue as any, {todo_id: id}, true, (canceled, result) => {
-        if (!canceled) {
-            const [canceled, l_type, l_id] = result as any
-            console.log(result)
-            
-            // database.link_todo_notes.add({note_id: payload, todo_id: id})
-        }
-    })
+    modalStack.push(LinkFromTodoModalVue as any, {todo_id: id}, true, (canceled, result) => {})
 }
 
 async function remove(id: number) {
     if (await EZModalYesNo("Are you sure?", "Do you want to delete this todo?")) {
-        DeleteTodo(id)
+        Delete({kind: 'Todo', id})
     }
 }
 

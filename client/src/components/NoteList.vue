@@ -5,7 +5,7 @@ import { QItem, QList, QItemSection, QItemLabel, QScrollArea, QBtn} from 'quasar
 import { inject } from 'vue';
 import { AddComponentAfterFocusedKey } from '@/injections';
 import NoteCreate from '@/components/NoteCreate.vue'
-import NoteDisplayVue from './NoteDisplay.vue';
+import NoteDisplayVue from './Windows/NoteDisplay.vue';
 
 const props = defineProps<{
     setTitle?: (title: string) => void

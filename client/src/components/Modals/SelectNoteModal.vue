@@ -14,14 +14,6 @@ const props = defineProps<{
 
 const notes = dynamicQuery(database.notes, [], table => table.toCollection())
 const instance = getCurrentInstance();
-watchEffect(() => {
-    try {
-        instance?.proxy?.$forceUpdate();
-    } catch {
-        console.log("Failed to forceUpdate")
-    }
-    notes.value.length
-})
 const selected = ref(-1)
 
 </script>
@@ -31,7 +23,7 @@ const selected = ref(-1)
         <QToolbar style="background: var(--q-primary);">
             <QToolbarTitle>Select a note</QToolbarTitle>
         </QToolbar>
-        <QScrollArea style="min-height: 40vh; min-width: 30vw;">
+        <QScrollArea style="height: 40vh; width: 30vw;">
             <QList separator v-if="notes.length > 0">
                 <QItem v-for="note in notes" :key="note.id!" :active="note.id === selected" @click="selected = note.id!" clickable active-class="bg-cyan-2">
                     <QItemSection>
