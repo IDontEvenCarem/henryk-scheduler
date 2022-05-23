@@ -7,6 +7,7 @@ import 'quasar/src/css/index.sass'
 import 'golden-layout/src/less/themes/goldenlayout-light-theme.less'
 import 'golden-layout/src/less/goldenlayout-base.less'
 // import '../node_modules/golden-layout/dist/css/themes/goldenlayout-base.css'
+import 'v-calendar/dist/style.css'
 
 import App from './App.vue'
 

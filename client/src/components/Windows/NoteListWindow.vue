@@ -31,7 +31,7 @@ function ShortenText (max_len: number, text: string) {
 const iat = inject(AddComponentAfterFocusedKey)
 const searchtext = ref("")
 const query = dynamicQuery(database.notes, [searchtext], 
-    (table, search) => table.filter(note => SearchInNote(search, note))
+    (table, search) => table.orderBy('id').reverse().filter(note => SearchInNote(search, note))
 )
 
 props.setTitle("Notes")

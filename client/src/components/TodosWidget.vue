@@ -3,12 +3,13 @@ import {useQuasar ,QTree, QBtn, QCheckbox, QIcon, QCard, QScrollArea} from 'quas
 import {dynamicQuery, database} from '@/dbintegration'
 import { computed } from '@vue/reactivity';
 import { type Todo, AddTodo, ToggleTodo, DeleteTodo, Link, Delete} from '@/database';
-import {ref, watchEffect} from 'vue'
+import {ref, watchEffect, type ComponentOptions} from 'vue'
 import type {Ref} from 'vue'
 import CreateTodoQModalVue from './Modals/CreateTodoQModal.vue';
 import { EZModalYesNo } from '@/ezmodals';
 import LinkFromTodoModalVue from './Modals/LinkFromTodoModal.vue';
 import { useModalStack } from '@/stores/ModalStack';
+import LinkModalVue from './Modals/LinkModal.vue';
 
 const modalStack = useModalStack()
 const $q = useQuasar()
@@ -88,7 +89,7 @@ function add_under(id: number) {
 }
 
 function link(id: number) {
-    modalStack.push(LinkFromTodoModalVue as any, {todo_id: id}, true, (canceled, result) => {})
+    modalStack.push(LinkModalVue as ComponentOptions, {from: {kind: 'Todo', id}}, true, (canceled, res) => {})
 }
 
 async function remove(id: number) {

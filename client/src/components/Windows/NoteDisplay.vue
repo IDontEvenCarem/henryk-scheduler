@@ -3,8 +3,8 @@ import {ref, watchEffect, type Ref} from 'vue'
 import { database, GetWithLinks, ToggleTodo, type Note, type OneshotEvent, type RepeatingEvent, type ThingName } from '@/database';
 import type { ReplacedID } from '@/database'
 import type { Todo } from '@/dbintegration';
-import { computed } from '@vue/reactivity';
 import { QIcon, QCheckbox, QBtn, QBtnGroup, QScrollArea} from 'quasar'
+import { EZModalLink } from '@/ezmodals'
 
 const props = defineProps<{
     id: number,
@@ -12,7 +12,6 @@ const props = defineProps<{
 }>()
 
 const state = ref<'loading' | 'error' | 'ok'>('loading')
-
 
 const note : Ref<Note | null> = ref(null)
 const links : Ref<ReplacedID<Note | Todo | OneshotEvent | RepeatingEvent>[]> = ref([])
@@ -66,6 +65,10 @@ function update(id: number) {
     ToggleTodo(id)
 }
 
+function AddLink() {
+    EZModalLink({kind: 'Note', id: props.id})
+}
+
 </script>
 
 <template>
@@ -97,7 +100,7 @@ function update(id: number) {
                     </div>
                 </div>
                 <QBtnGroup flat>
-                    <QBtn flat color="primary">Add Link</QBtn>
+                    <QBtn flat color="primary" @click="AddLink">Add Link</QBtn>
                     <QBtn flat color="primary">Edit</QBtn>
                     <QBtn flat color="negative">Delete</QBtn>
                 </QBtnGroup>

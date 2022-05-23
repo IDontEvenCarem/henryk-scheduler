@@ -129,7 +129,7 @@ onMounted(() => {
 onMounted(() => {
     addComponent(TodosWidgetVue)
     addComponent(NoteListWindowVue)
-    addComponent(CalendarVue)
+    // addComponent(CalendarVue)
     addComponent(DebugVue)
 })
 
