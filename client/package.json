@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@quasar/extras": "^1.13.5",
-    "dexie": "^3.2.1",
+    "dexie": "^3.2.2",
     "golden-layout": "^2.5.0",
     "jose": "^4.6.0",
     "lodash": "^4.17.21",
