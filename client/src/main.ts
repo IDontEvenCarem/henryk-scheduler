@@ -11,7 +11,11 @@ import 'golden-layout/src/less/goldenlayout-base.less'
 import App from './App.vue'
 import router from './router'
 
+let dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+
 const app = createApp(App)
+
+app.provide("dark", dark)
 
 app.use(createPinia())
 app.use(Quasar, {

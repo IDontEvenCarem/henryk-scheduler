@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { QInput } from 'quasar';
+import { useUserStore } from '@/stores/User';
 
 const emit = defineEmits<{
     (e: 'closeModal'): void
@@ -11,6 +12,13 @@ const props = defineProps<{
 }>()
 const username=ref('')
 const password=ref('')
+
+const user = useUserStore();
+
+function doLogin()
+{
+    user.login(username.value, password.value).then(()=>emit("closeModal")).catch(()=>alert("there was a problem logging in"));
+}
 </script>
 
 <template>
@@ -30,7 +38,7 @@ const password=ref('')
                  <input type="submit" value="Zarejestruj się">
             </div> -->
 
-            <button @click="" class="button" style="vertical-align:middle"><span>Log in </span></button>
+            <button @click="doLogin" class="button" style="vertical-align:middle"><span>Log in </span></button>
 
         </div>
     </div>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { QInput } from 'quasar';
+import { useUserStore } from '@/stores/User';
 
 const emit = defineEmits<{
     (e: 'closeModal'): void
@@ -12,6 +13,16 @@ const props = defineProps<{
 const username=ref('')
 const password=ref('')
 const checkPassword=ref('')
+
+const user = useUserStore();
+
+function doRegister()
+{
+    if (password.value === checkPassword.value)
+    {
+        user.register(username.value, password.value).then(()=>emit("closeModal")).catch(()=>alert("there was a problem while register"));
+    }
+}
 </script>
 
 <template>

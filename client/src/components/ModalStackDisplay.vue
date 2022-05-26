@@ -37,7 +37,7 @@ function pop(...args : any[]) {
     grid-template-areas: "only";
 }
 .modal-stack-root[gofront=true] {
-    z-index: 2100;
+    z-index: 992100;
 }
 .modal-stack-root:empty {
     z-index: -1;
