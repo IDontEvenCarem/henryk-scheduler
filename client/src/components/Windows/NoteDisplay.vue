@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import {ref, watchEffect, type Ref} from 'vue'
-import { database, GetWithLinks, ToggleTodo, type Note, type OneshotEvent, type RepeatingEvent, type ThingName } from '@/database';
-import type { ReplacedID } from '@/database'
+import {inject, ref, watchEffect, getCurrentInstance, onMounted, onScopeDispose } from 'vue'
+import type { Ref } from 'vue'
+import { database, GetWithLinks, ToggleTodo } from '@/database';
+import type { ReplacedID, Note, OneshotEvent, RepeatingEvent, ThingName, ID } from '@/database'
 import type { Todo } from '@/dbintegration';
 import { QIcon, QCheckbox, QBtn, QBtnGroup, QScrollArea} from 'quasar'
 import { EZModalLink } from '@/ezmodals'
+import { AddComponentAfterFocusedKey } from '@/injections'
 
 const props = defineProps<{
     id: number,
@@ -16,16 +18,7 @@ const state = ref<'loading' | 'error' | 'ok'>('loading')
 const note : Ref<Note | null> = ref(null)
 const links : Ref<ReplacedID<Note | Todo | OneshotEvent | RepeatingEvent>[]> = ref([])
 
-// const links_todos = dynamicQuery(database.link_todo_notes, [], table => table.where('note_id').equals(props.id))
-// const todos = dynamicQuery(database.todos, [links_todos], table => table.where('id').anyOf(links_todos.value.map(l => l.todo_id)))
-// // const links_calendar = dynamicQuery(database.link_notes_calendar, [], table => table.where('note_id').equals(props.id))
-// const todo_completions = computed(() => {
-//     return todos.value.filter(t => t.done).map(t => t.id!)
-// })
-
-// watchEffect(() => {
-//     todo_completions.value = todos.value.filter(t => t.done).map(t => t.id!)
-// })
+const iat = inject(AddComponentAfterFocusedKey)
 
 if (props.setTitle) {
     props.setTitle("Note".padEnd(25, ' '))
@@ -33,33 +26,35 @@ if (props.setTitle) {
 
 const sortorder : Record<ThingName, number> = {Todo: 0, Note: 1, OneshotEvent: 2, ScheduleEvent: 3}
 
-GetWithLinks({kind: 'Note', id: props.id}).then(value => {
-    console.log("== NoteDisplay.vue ==")
-    console.log(value.linked)
-    note.value = value.value as Note
-    links.value = value.linked
-    links.value.sort((l, r) => (sortorder[l.id.kind] < sortorder[r.id.kind]) as unknown as number - 0.5)
-    state.value = 'ok'
-    if (props.setTitle) {
-        props.setTitle((value.value as Note).title)
-    }
-}).catch(err => {
-    state.value = 'error'
+function Refresh() {
+    requestAnimationFrame(() => {
+        GetWithLinks({kind: 'Note', id: props.id}).then(value => {
+            console.log("== NoteDisplay.vue ==")
+            console.log(value.linked)
+            note.value = value.value as Note
+            links.value = value.linked
+            links.value.sort((l, r) => (sortorder[l.id.kind] < sortorder[r.id.kind]) as unknown as number - 0.5)
+            state.value = 'ok'
+            if (props.setTitle) {
+                props.setTitle((value.value as Note).title)
+            }
+        }).catch(err => {
+            state.value = 'error'
+        })
+    })
+}
+
+
+onMounted(() => {
+    Refresh()
+    database.link.hook.creating.subscribe(Refresh)
+    database.link.hook.deleting.subscribe(Refresh)
 })
 
-// database.notes.get(props.id).then(lnote => {
-//     if (lnote) {
-//         state.value = 'ok'
-//         note.value = lnote
-//         if (props.setTitle) {
-//             props.setTitle(lnote.title.substring(0, 20) + (lnote.title.length > 20 ? "..." : ""))
-//         }
-//     } else {
-//         state.value = 'error'
-//     }
-// }).catch(err => {
-//     state.value = 'error'
-// })
+onScopeDispose(() => {
+    database.link.hook.creating.unsubscribe(Refresh);
+    database.link.hook.deleting.unsubscribe(Refresh);
+})
 
 function update(id: number) {
     ToggleTodo(id)
@@ -67,6 +62,20 @@ function update(id: number) {
 
 function AddLink() {
     EZModalLink({kind: 'Note', id: props.id})
+}
+
+function OpenNote (id: ID) {
+    if (iat !== undefined) {
+        // iat(getCurrentInstance()?.type!, {id: id.id, setTitle: props.setTitle})
+    }
+}
+
+function OpenOneshotEvent(id: ID) {
+
+}
+
+function OpenScheduledEvent(id: ID) {
+
 }
 
 </script>
@@ -90,13 +99,19 @@ function AddLink() {
                         {{(link as ReplacedID<Todo>).done}}
                     </div>
                     <div v-else-if="link.id.kind === 'Note'">
-                        NOTE
+                        <strong @click="OpenNote(link.id)">{{(link as ReplacedID<Note>).title}}</strong>
                     </div>
                     <div v-else-if="link.id.kind === 'OneshotEvent'">
-                        ONESHOTEVENT
+                        Event
+                        <strong @click="OpenOneshotEvent(link.id)">
+                            {{(link as ReplacedID<OneshotEvent>).name}}
+                        </strong>
                     </div>
                     <div v-else-if="link.id.kind === 'ScheduleEvent'">
-                        ScheduleEvent
+                        Event
+                        <strong @click="OpenScheduledEvent(link.id)">
+                            {{(link as ReplacedID<OneshotEvent>).name}}
+                        </strong>
                     </div>
                 </div>
                 <QBtnGroup flat>

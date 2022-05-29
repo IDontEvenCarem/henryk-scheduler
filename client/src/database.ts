@@ -4,6 +4,8 @@ import type { Change } from './common'
 import _ from 'lodash'
 
 export type ThingName = "ScheduleEvent" | "OneshotEvent" | "Todo" | "Note";
+export type AnyEvent = OneshotEvent | RepeatingEvent
+export type Weekday = 1 | 2 | 3 | 4 | 5 | 6 | 7
 
 export interface ID {
     kind: ThingName,
@@ -20,25 +22,22 @@ export interface Todo {
 export interface OneshotEvent {
     id?: number,
     name: string,
-    date: Date,
-    time_start: number,
-    time_end: number,
-    room: string,
-    teacher: string,
-    color: string
+    start: Date,
+    end: Date,
+    color: string,
+    description: string
 }
 
 export interface RepeatingEvent {
     id?: number,
     name: string,
-    room: string,
-    teacher: string,
     color: string,
-    weekday: number,
+    weekday: Weekday,
     time_start: number,
     time_end: number,
     repeats_start?: Date,
-    repeats_end?: Date
+    repeats_end?: Date,
+    description: string
 }
 export interface Note {
     id?: number,
@@ -67,9 +66,9 @@ export class TypedDexie extends Dexie {
 
     constructor() {
         super('testdexie')
-        this.version(18).stores({
+        this.version(20).stores({
             todos: '++id',
-            oneshot_events: '++id, date',
+            oneshot_events: '++id, start, end',
             repeating_events: '++id, weekday, repeats_start, repeats_end',
             notes: '++id, title',
             link: '++, [from+from_id], [to+to_id], from_id, to_id'
@@ -78,7 +77,7 @@ export class TypedDexie extends Dexie {
 }
 
 
-export type AnyEvent = OneshotEvent | RepeatingEvent
+
 
 export const database = new TypedDexie()
 
@@ -124,14 +123,22 @@ export async function AlterOneshotEvent (change: Change<OneshotEvent>) {
     }
 }
 
+export async function AddOneshotEvent (event: OneshotEvent) {
+    return database.oneshot_events.add(event)
+}
+
+export async function AddRepeatingEvent (event: RepeatingEvent) {
+    return database.repeating_events.add(event)
+}
+
 export async function AddTodo (text: string, parent_id: number | undefined = undefined) : Promise<ID> {
     const resp = await database.todos.add({text, done: false, parent_id})
     return {kind: 'Todo', id: parseInt(resp.toString())}
 }
 
-export async function AddRepeatingEvent (name: string, color: string, weekday: number, time_start: number, time_end: number) {
-    return database.repeating_events.add({name, color, weekday, time_end, time_start, room: "", teacher: ""})
-}
+// export async function AddRepeatingEvent (name: string, color: string, weekday: Weekday, time_start: number, time_end: number) {
+//     return database.repeating_events.add({name, color, weekday, time_end, time_start, room: "", teacher: ""})
+// }
 
 export async function UpdateRepeatingEvent(id: number, update: Partial<RepeatingEvent>) {
     return database.repeating_events.update(id, update)

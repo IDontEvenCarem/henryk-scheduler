@@ -11,6 +11,7 @@ import {InsertAfterThisKey, AddComponentAfterFocusedKey, CloseFocusedWindowKey} 
 import { QBtn, QToolbar, QToolbarTitle, QLayout, QHeader, QPage, QPageContainer, QFooter } from 'quasar';
 import DebugVue from './components/Windows/Debug.vue';
 import NoteListWindowVue from './components/Windows/NoteListWindow.vue';
+import CalendarWindowVue from './components/Windows/CalendarWindow.vue';
 // import HelloWorldVue from './components/HelloWorld.vue';
 // import TheWelcomeVue from './components/TheWelcome.vue';
 
@@ -130,7 +131,8 @@ onMounted(() => {
     addComponent(TodosWidgetVue)
     addComponent(NoteListWindowVue)
     // addComponent(CalendarVue)
-    addComponent(DebugVue)
+    addComponent(CalendarWindowVue)
+    // addComponent(DebugVue)
 })
 
 function loggg () {

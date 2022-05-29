@@ -24,7 +24,6 @@ const COLOR_TABLE = [
   'indigo', 'blue'
 ]
 const attrs = computed(() => {
-    console.log(oneshots.value)
     let alt_color = 0
 
     const data = [
@@ -41,7 +40,10 @@ const attrs = computed(() => {
             return {
                 key: `o${ev.id!}`,
                 bar: COLOR_TABLE[(alt_color++) % COLOR_TABLE.length],
-                dates: ev.date,
+                dates: {
+                    start: ev.start,
+                    end: ev.end
+                },
                 customData: {
                     ...ev,
                     type: 'O'
@@ -58,8 +60,8 @@ const attrs = computed(() => {
                 bar: COLOR_TABLE[(alt_color++) % COLOR_TABLE.length],
                 dates:
                     ev.repeats_start === undefined
-                    ? { weekdays: [ev.weekday] }
-                    : { start: ev.repeats_start || null, end: ev.repeats_end || null, weekdays: [ev.weekday] },
+                    ? { weekdays: [ev.weekday+1] }
+                    : { start: ev.repeats_start || null, end: ev.repeats_end || null, weekdays: [ev.weekday+1] },
                 customData: {
                     ...ev,
                     type: 'R'
