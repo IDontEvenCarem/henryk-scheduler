@@ -11,18 +11,18 @@ async function main() {
     await client.connect();
     const db = await client.db("henryk_scheduler")
     const users_col = db.collection('users')
-    const history_col = db.collection('history')
+    // const history_col = db.collection('history')
 
     async function save_user(username, password) {
         if (await users_col.countDocuments({ username }) != 0) {
             throw Error("User already registered with that name")
         }
 
-        history_col.insertOne({ username })
-        return users_col.insertOne({
-            username,
-            password: await argon.hash(password)
-        })
+        // history_col.insertOne({ username })
+        // return users_col.insertOne({
+        //     username,
+        //     password: await argon.hash(password)
+        // })
     }
 
     function password_of(username) {
@@ -91,7 +91,7 @@ async function main() {
         }
     })
 
-    app.post('/change', async (req, res) => {
+    app.post('/upload', async (req, res) => {
         const data = req.body
         if (!('usertoken' in data)) {
             return res.status(400).json({ error: "You have to authenticate to save your data" })
@@ -102,278 +102,20 @@ async function main() {
         })
         const username = payload.username
         const userid = (await users_col.findOne({ username }))._id
-        const user_history_id = (await history_col.findOne({ username }))._id
 
-        if ('added' in data) {
-            if ('notes' in data.added)
-                await users_col.updateOne({ _id: userid },
-                    {
-                        $push: {
-                            notes: {
-                                $each: data.added.notes
-                            }
-                        }
-                    })
-            if ('todo' in data.added)
-                await users_col.updateOne({ _id: userid },
-                    {
-                        $push: {
-                            todo: {
-                                $each: data.added.todo
-                            }
-                        }
-                    })
-            if ('calendar' in data.added)
-                await users_col.updateOne({ _id: userid },
-                    {
-                        $push: {
-                            calendar: {
-                                $each: data.added.calendar
-                            }
-                        }
-                    })
+        const user_data = {
+            data: data.data,
+            createdAt: new Date(),
+            size: data.data.length,
+            name: data.name
         }
-        if ('deleted' in data) {
-            if ('notes' in data.deleted) {
-                let deleted_notes = (await users_col.findOne({ _id: userid })).notes
-                deleted_notes = Object.values(deleted_notes)
-                let is = false
-                for (let i = 0; i < deleted_notes.length; i++) {
-                    for (let j = 0; j < data.deleted.notes.length; j++) {
-                        if (deleted_notes[i]._id == data.deleted.notes[j]) {
-                            is = true
-                            deleted_notes[i].category = "note"
-                            deleted_notes[i].action = "deleted"
-                            break
-                        }
-                    }
-                    if (is == false) {
-                        deleted_notes.splice(i, 1)
-                        i--
-                    }
-                    is = false
-                }
-                await history_col.updateOne({ _id: user_history_id },
-                    {
-                        $addToSet: {
-                            history: {
-                                $each: deleted_notes
-                            }
-                        }
-                    })
-                await users_col.updateOne({ _id: userid },
-                    {
-                        $pull: {
-                            notes: {
-                                _id: {
-                                    $in: data.deleted.notes
-                                }
-                            }
-                        }
-                    })
-            }
-            if ('todo' in data.deleted) {
-                let deleted_todo = (await users_col.findOne({ _id: userid })).todo
-                deleted_todo = Object.values(deleted_todo)
-                let is = false
-                for (let i = 0; i < deleted_todo.length; i++) {
-                    for (let j = 0; j < data.deleted.todo.length; j++) {
-                        if (deleted_todo[i]._id == data.deleted.todo[j]) {
-                            deleted_todo[i].category = "todo"
-                            deleted_todo[i].action = "deleted"
-                            is = true
-                            break
-                        }
-                    }
-                    if (is == false) {
-                        deleted_todo.splice(i, 1)
-                        i--
-                    }
-                    is = false
-                }
-                await history_col.updateOne({ _id: user_history_id },
-                    {
-                        $addToSet: {
-                            history: {
-                                $each: deleted_todo
-                            }
-                        }
-                    })
-                await users_col.updateOne({ _id: userid },
-                    {
-                        $pull: {
-                            todo: {
-                                _id: {
-                                    $in: data.deleted.todo
-                                }
-                            }
-                        }
-                    })
-            }
-            if ('calendar' in data.deleted) {
-                let deleted_calendar = (await users_col.findOne({ _id: userid })).calendar
-                deleted_calendar = Object.values(deleted_calendar)
-                let is = false
-                for (let i = 0; i < deleted_calendar.length; i++) {
-                    for (let j = 0; j < data.deleted.calendar.length; j++) {
-                        if (deleted_calendar[i]._id == data.deleted.calendar[j]) {
-                            deleted_todo[i].category = "calendar"
-                            deleted_todo[i].action = "deleted"
-                            is = true
-                            break
-                        }
-                    }
-                    if (is == false) {
-                        deleted_calendar.splice(i, 1)
-                        i--
-                    }
-                    is = false
-                }
-                await history_col.updateOne({ _id: user_history_id },
-                    {
-                        $addToSet: {
-                            history: {
-                                $each: deleted_calendar
-                            }
-                        }
-                    })
-                await users_col.updateOne({ _id: userid },
-                    {
-                        $pull: {
-                            calendar: {
-                                _id: {
-                                    $in: data.deleted.calendar
-                                }
-                            }
-                        }
-                    })
-            }
-        }
-        if ('modified' in data) {
-            if ('notes' in data.modified) {
-                let modified_notes = (await users_col.findOne({ _id: userid })).notes
-                modified_notes = Object.values(modified_notes)
-                for (const item of data.modified.notes) {
-                    for (var note of modified_notes) {
-                        if (note._id == item._id) {
-                            note.category = "note"
-                            note.action = "modified"
-                            await history_col.updateOne({ _id: user_history_id }, {
-                                $addToSet: {
-                                    history: note
-                                }
-                            })
-                            break
-                        }
-                    }
-                    await users_col.updateOne({ _id: userid, "notes._id": item._id },
-                        {
-                            $set: {
-                                "notes.$": item
-                            }
-                        })
-                }
-            }
-            if ('todo' in data.modified) {
-                let modified_todo = (await users_col.findOne({ _id: userid })).todo
-                modified_todo = Object.values(modified_todo)
-                for (const item of data.modified.todo) {
-                    for (var todo of modified_todo) {
-                        if (todo._id == item._id) {
-                            todo.category = "todo"
-                            todo.action = "modified"
-                            await history_col.updateOne({ _id: user_history_id }, {
-                                $addToSet: {
-                                    history: todo
-                                }
-                            })
-                            break
-                        }
-                    }
-                    await users_col.updateOne({ _id: userid, "todo._id": item._id },
-                        {
-                            $set: {
-                                "todo.$": item
-                            }
-                        })
-                }
 
-            }
-            if ('calendar' in data.modified) {
-                let modified_calendar = (await users_col.findOne({ _id: userid })).calendar
-                modified_calendar = Object.values(modified_calendar)
-                for (const item of data.modified.notes) {
-                    for (var calendar of modified_calendar) {
-                        if (calendar._id == item._id) {
-                            calendar.category = "calendar"
-                            calendar.action = "modified"
-                            await history_col.updateOne({ _id: user_history_id }, {
-                                $addToSet: {
-                                    history: calendar
-                                }
-                            })
-                            break
-                        }
-                    }
-                    await users_col.updateOne({ _id: userid, "calendar._id": item._id },
-                        {
-                            $set: {
-                                "calendar.$": item
-                            }
-                        })
-                }
-
-            }
-        }
-        res.status(200).json({ message: "Changes approved" })
-    })
-
-    app.post('/upsync', async (req, res) => {
-        const data = req.body
-        if (!('usertoken' in data)) {
-            return res.status(400).json({ error: "You have to authenticate to save your data" })
-        }
-        const jwt = data.usertoken
-        const { payload, protectedHeader } = await jose.jwtVerify(jwt, publicKey, {
-            alg: 'PS256'
-        })
-        const username = payload.username
-        const userid = (await users_col.findOne({ username }))._id
-        const user_history_id = (await history_col.findOne({ username }))._id
-        const user_notes = (await users_col.findOne({ _id: userid })).notes || []
-        const user_todo = (await users_col.findOne({ _id: userid })).todo || []
-        const user_calendar = (await users_col.findOne({ _id: userid })).calendar || []
-        user_notes.forEach((note) => {
-            note.category = "note"
-            note.action = "upsync"
-        });
-        user_todo.forEach((todo) => {
-            todo.category = "todo"
-            todo.action = "upsync"
-        });
-        user_calendar.forEach((calendar) => {
-            calendar.category = "calendar"
-            calendar.action = "upsync"
-        });
-
-        await history_col.updateOne({ _id: user_history_id },
-            {
-                $addToSet:
-                {
-                    history:
-                        { $each: user_notes },
-                    history:
-                        { $each: user_todo },
-                    history:
-                        { $each: user_calendar }
-                }
-            })
-        await users_col.updateOne({ _id: userid }, { $set: { notes: data.notes, todo: data.todo, calendar: data.calendar } })
+        await users_col.updateOne({ _id: userid }, { $push: { data: user_data } })
 
         res.status(200).json({ message: "Upsync done" })
     })
 
-    app.get('/downsync', async (req, res) => {
+    app.get('/download', async (req, res) => {
         const data = req.body
         if (!('usertoken' in data)) {
             return res.status(400).json({ error: "You have to authenticate to save your data" })
@@ -385,14 +127,12 @@ async function main() {
         const username = payload.username
         const userid = (await users_col.findOne({ username }))._id
 
-        const usernotes = (await users_col.findOne({ username })).notes
-        const usertodo = (await users_col.findOne({ username })).todo
-        const usercalendar = (await users_col.findOne({ username })).calendar
+        const user_data = (await users_col.findOne({ _id: userid })).data
 
-        res.status(200).json({ notes: usernotes, todo: usertodo, calendar: usercalendar })
+        res.status(200).json({ user_data })
     })
 
-    app.get('/history', async (req, res) => {
+    app.get('/list', async (req, res) => {
         const data = req.body
         if (!('usertoken' in data)) {
             return res.status(400).json({ error: "You have to authenticate to save your data" })
@@ -402,10 +142,349 @@ async function main() {
             alg: 'PS256'
         })
         const username = payload.username
-        const history = (await history_col.findOne({ username })).history
+        const userid = (await users_col.findOne({ username }))._id
 
-        res.status(200).json({history})
+        const user_data = (await users_col.findOne({ _id: userid })).data
+
+        const basic_info = user_data.map((element) => (
+            {
+                name: element.name,
+                createdAt: element.createdAt,
+                size: element.size
+            }
+        ))
+
+        res.status(200).json({ basic_info })
     })
+
+    const example = {
+        usertoken: "JWT-ASDASdASDASDASDASDASD",
+        data: {
+            notes: [
+                {
+                    _id: 123,
+                    title: "testowy tytuł",
+                    contents: "Hello, world!"
+                }
+            ]
+        }
+    }
+
+    // app.post('/change', async (req, res) => {
+    //     const data = req.body
+    //     if (!('usertoken' in data)) {
+    //         return res.status(400).json({ error: "You have to authenticate to save your data" })
+    //     }
+    //     const jwt = data.usertoken
+    //     const { payload, protectedHeader } = await jose.jwtVerify(jwt, publicKey, {
+    //         alg: 'PS256'
+    //     })
+    //     const username = payload.username
+    //     const userid = (await users_col.findOne({ username }))._id
+    //     const user_history_id = (await history_col.findOne({ username }))._id
+
+    //     if ('added' in data) {
+    //         if ('notes' in data.added)
+    //             await users_col.updateOne({ _id: userid },
+    //                 {
+    //                     $push: {
+    //                         notes: {
+    //                             $each: data.added.notes
+    //                         }
+    //                     }
+    //                 })
+    //         if ('todo' in data.added)
+    //             await users_col.updateOne({ _id: userid },
+    //                 {
+    //                     $push: {
+    //                         todo: {
+    //                             $each: data.added.todo
+    //                         }
+    //                     }
+    //                 })
+    //         if ('calendar' in data.added)
+    //             await users_col.updateOne({ _id: userid },
+    //                 {
+    //                     $push: {
+    //                         calendar: {
+    //                             $each: data.added.calendar
+    //                         }
+    //                     }
+    //                 })
+    //     }
+    //     if ('deleted' in data) {
+    //         if ('notes' in data.deleted) {
+    //             let deleted_notes = (await users_col.findOne({ _id: userid })).notes
+    //             deleted_notes = Object.values(deleted_notes)
+    //             let is = false
+    //             for (let i = 0; i < deleted_notes.length; i++) {
+    //                 for (let j = 0; j < data.deleted.notes.length; j++) {
+    //                     if (deleted_notes[i]._id == data.deleted.notes[j]) {
+    //                         is = true
+    //                         deleted_notes[i].category = "note"
+    //                         deleted_notes[i].action = "deleted"
+    //                         break
+    //                     }
+    //                 }
+    //                 if (is == false) {
+    //                     deleted_notes.splice(i, 1)
+    //                     i--
+    //                 }
+    //                 is = false
+    //             }
+    //             await history_col.updateOne({ _id: user_history_id },
+    //                 {
+    //                     $addToSet: {
+    //                         history: {
+    //                             $each: deleted_notes
+    //                         }
+    //                     }
+    //                 })
+    //             await users_col.updateOne({ _id: userid },
+    //                 {
+    //                     $pull: {
+    //                         notes: {
+    //                             _id: {
+    //                                 $in: data.deleted.notes
+    //                             }
+    //                         }
+    //                     }
+    //                 })
+    //         }
+    //         if ('todo' in data.deleted) {
+    //             let deleted_todo = (await users_col.findOne({ _id: userid })).todo
+    //             deleted_todo = Object.values(deleted_todo)
+    //             let is = false
+    //             for (let i = 0; i < deleted_todo.length; i++) {
+    //                 for (let j = 0; j < data.deleted.todo.length; j++) {
+    //                     if (deleted_todo[i]._id == data.deleted.todo[j]) {
+    //                         deleted_todo[i].category = "todo"
+    //                         deleted_todo[i].action = "deleted"
+    //                         is = true
+    //                         break
+    //                     }
+    //                 }
+    //                 if (is == false) {
+    //                     deleted_todo.splice(i, 1)
+    //                     i--
+    //                 }
+    //                 is = false
+    //             }
+    //             await history_col.updateOne({ _id: user_history_id },
+    //                 {
+    //                     $addToSet: {
+    //                         history: {
+    //                             $each: deleted_todo
+    //                         }
+    //                     }
+    //                 })
+    //             await users_col.updateOne({ _id: userid },
+    //                 {
+    //                     $pull: {
+    //                         todo: {
+    //                             _id: {
+    //                                 $in: data.deleted.todo
+    //                             }
+    //                         }
+    //                     }
+    //                 })
+    //         }
+    //         if ('calendar' in data.deleted) {
+    //             let deleted_calendar = (await users_col.findOne({ _id: userid })).calendar
+    //             deleted_calendar = Object.values(deleted_calendar)
+    //             let is = false
+    //             for (let i = 0; i < deleted_calendar.length; i++) {
+    //                 for (let j = 0; j < data.deleted.calendar.length; j++) {
+    //                     if (deleted_calendar[i]._id == data.deleted.calendar[j]) {
+    //                         deleted_todo[i].category = "calendar"
+    //                         deleted_todo[i].action = "deleted"
+    //                         is = true
+    //                         break
+    //                     }
+    //                 }
+    //                 if (is == false) {
+    //                     deleted_calendar.splice(i, 1)
+    //                     i--
+    //                 }
+    //                 is = false
+    //             }
+    //             await history_col.updateOne({ _id: user_history_id },
+    //                 {
+    //                     $addToSet: {
+    //                         history: {
+    //                             $each: deleted_calendar
+    //                         }
+    //                     }
+    //                 })
+    //             await users_col.updateOne({ _id: userid },
+    //                 {
+    //                     $pull: {
+    //                         calendar: {
+    //                             _id: {
+    //                                 $in: data.deleted.calendar
+    //                             }
+    //                         }
+    //                     }
+    //                 })
+    //         }
+    //     }
+    //     if ('modified' in data) {
+    //         if ('notes' in data.modified) {
+    //             let modified_notes = (await users_col.findOne({ _id: userid })).notes
+    //             modified_notes = Object.values(modified_notes)
+    //             for (const item of data.modified.notes) {
+    //                 for (var note of modified_notes) {
+    //                     if (note._id == item._id) {
+    //                         note.category = "note"
+    //                         note.action = "modified"
+    //                         await history_col.updateOne({ _id: user_history_id }, {
+    //                             $addToSet: {
+    //                                 history: note
+    //                             }
+    //                         })
+    //                         break
+    //                     }
+    //                 }
+    //                 await users_col.updateOne({ _id: userid, "notes._id": item._id },
+    //                     {
+    //                         $set: {
+    //                             "notes.$": item
+    //                         }
+    //                     })
+    //             }
+    //         }
+    //         if ('todo' in data.modified) {
+    //             let modified_todo = (await users_col.findOne({ _id: userid })).todo
+    //             modified_todo = Object.values(modified_todo)
+    //             for (const item of data.modified.todo) {
+    //                 for (var todo of modified_todo) {
+    //                     if (todo._id == item._id) {
+    //                         todo.category = "todo"
+    //                         todo.action = "modified"
+    //                         await history_col.updateOne({ _id: user_history_id }, {
+    //                             $addToSet: {
+    //                                 history: todo
+    //                             }
+    //                         })
+    //                         break
+    //                     }
+    //                 }
+    //                 await users_col.updateOne({ _id: userid, "todo._id": item._id },
+    //                     {
+    //                         $set: {
+    //                             "todo.$": item
+    //                         }
+    //                     })
+    //             }
+
+    //         }
+    //         if ('calendar' in data.modified) {
+    //             let modified_calendar = (await users_col.findOne({ _id: userid })).calendar
+    //             modified_calendar = Object.values(modified_calendar)
+    //             for (const item of data.modified.notes) {
+    //                 for (var calendar of modified_calendar) {
+    //                     if (calendar._id == item._id) {
+    //                         calendar.category = "calendar"
+    //                         calendar.action = "modified"
+    //                         await history_col.updateOne({ _id: user_history_id }, {
+    //                             $addToSet: {
+    //                                 history: calendar
+    //                             }
+    //                         })
+    //                         break
+    //                     }
+    //                 }
+    //                 await users_col.updateOne({ _id: userid, "calendar._id": item._id },
+    //                     {
+    //                         $set: {
+    //                             "calendar.$": item
+    //                         }
+    //                     })
+    //             }
+
+    //         }
+    //     }
+    //     res.status(200).json({ message: "Changes approved" })
+    // })
+
+    // app.post('/upsync', async (req, res) => {
+    //     const data = req.body
+    //     if (!('usertoken' in data)) {
+    //         return res.status(400).json({ error: "You have to authenticate to save your data" })
+    //     }
+    //     const jwt = data.usertoken
+    //     const { payload, protectedHeader } = await jose.jwtVerify(jwt, publicKey, {
+    //         alg: 'PS256'
+    //     })
+    //     const username = payload.username
+    //     const userid = (await users_col.findOne({ username }))._id
+    //     const user_history_id = (await history_col.findOne({ username }))._id
+    //     const user_notes = (await users_col.findOne({ _id: userid })).notes || []
+    //     const user_todo = (await users_col.findOne({ _id: userid })).todo || []
+    //     const user_calendar = (await users_col.findOne({ _id: userid })).calendar || []
+    //     user_notes.forEach((note) => {
+    //         note.category = "note"
+    //         note.action = "upsync"
+    //     });
+    //     user_todo.forEach((todo) => {
+    //         todo.category = "todo"
+    //         todo.action = "upsync"
+    //     });
+    //     user_calendar.forEach((calendar) => {
+    //         calendar.category = "calendar"
+    //         calendar.action = "upsync"
+    //     });
+
+    //     await history_col.updateOne({ _id: user_history_id },
+    //         {
+    //             $addToSet:
+    //             {
+    //                 history:
+    //                     { $each: user_notes },
+    //                 history:
+    //                     { $each: user_todo },
+    //                 history:
+    //                     { $each: user_calendar }
+    //             }
+    //         })
+    //     await users_col.updateOne({ _id: userid }, { $set: { notes: data.notes, todo: data.todo, calendar: data.calendar } })
+
+    //     res.status(200).json({ message: "Upsync done" })
+    // })
+
+    // app.get('/downsync', async (req, res) => {
+    //     const data = req.body
+    //     if (!('usertoken' in data)) {
+    //         return res.status(400).json({ error: "You have to authenticate to save your data" })
+    //     }
+    //     const jwt = data.usertoken
+    //     const { payload, protectedHeader } = await jose.jwtVerify(jwt, publicKey, {
+    //         alg: 'PS256'
+    //     })
+    //     const username = payload.username
+    //     const userid = (await users_col.findOne({ username }))._id
+
+    //     const usernotes = (await users_col.findOne({ username })).notes
+    //     const usertodo = (await users_col.findOne({ username })).todo
+    //     const usercalendar = (await users_col.findOne({ username })).calendar
+
+    //     res.status(200).json({ notes: usernotes, todo: usertodo, calendar: usercalendar })
+    // })
+
+    // app.get('/history', async (req, res) => {
+    //     const data = req.body
+    //     if (!('usertoken' in data)) {
+    //         return res.status(400).json({ error: "You have to authenticate to save your data" })
+    //     }
+    //     const jwt = data.usertoken
+    //     const { payload, protectedHeader } = await jose.jwtVerify(jwt, publicKey, {
+    //         alg: 'PS256'
+    //     })
+    //     const username = payload.username
+    //     const history = (await history_col.findOne({ username })).history
+
+    //     res.status(200).json({history})
+    // })
 
     app.listen(port, () => {
         console.log(`Example app listening on port ${port}`)
