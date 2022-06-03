@@ -6,6 +6,7 @@ import LinkModalVue from './components/Modals/LinkModal.vue';
 export function EZModalYesNo (title?: string, contents?: string) : Promise<boolean> {
     const modalStack = useModalStack();
     return new Promise(resolve => {
+        // @ts-nocheck 
         modalStack.push(YesNoModalComponent, {title, contents}, true, (canceled, [result]) => {
             if (canceled) {
                 resolve(false)

@@ -89,14 +89,14 @@ function OpenScheduledEvent(id: ID) {
         <h1 style="text-align: center;">Loading...</h1>
     </div>
     <QScrollArea v-else style="width: var(--gl-width); height: var(--gl-height);">
-        <div class="note-view">
+        <div class="q-pa-md">
             <h4>{{note?.title || "No title"}} </h4>
             <div v-html="note?.content || 'No content'"></div>
             <hr>
             <div>
                 <QBtnGroup flat>
-                    <QBtn flat color="primary" @click="AddLink">Add Link</QBtn>
-                    <QBtn flat color="primary">Edit</QBtn>
+                    <QBtn flat color="primary" @click="AddLink">Link</QBtn>
+                    <!-- <QBtn flat color="primary">Edit</QBtn> -->
                     <QBtn flat color="negative">Delete</QBtn>
                 </QBtnGroup>
             </div>

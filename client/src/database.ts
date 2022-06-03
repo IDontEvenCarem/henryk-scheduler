@@ -194,7 +194,7 @@ export async function Delete (id: ID) {
         return database.repeating_events.delete(id.id)
     }
     else {
-        throw new Error("Invalid deletion case - impoper kind in id")
+        throw new Error("Invalid deletion case - improper kind in id")
     }
 }
 
