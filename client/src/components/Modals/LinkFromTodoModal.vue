@@ -2,42 +2,46 @@
 import { useDialogPluginComponent, QDialog, QCard, QBtn, QBtnGroup, useQuasar } from 'quasar'
 import SelectEventModalVue from './SelectEventModal.vue';
 import SelectNoteModalVue from './SelectNoteModal.vue';
+
 import {database} from '@/dbintegration'
+import { useModalStack } from '@/stores/ModalStack';
+import { onMounted } from 'vue';
+import { Link } from '@/database';
 
-const props = defineProps<{}>()
-const emits = defineEmits([
-    ...useDialogPluginComponent.emits
-])
+const modalStack = useModalStack()
 
-const $q = useQuasar()
-const {dialogRef, onDialogCancel, onDialogHide, onDialogOK} = useDialogPluginComponent()
+const emit = defineEmits<{
+    (e: 'closeModal', canceled_propagate: boolean): void
+}>();
+
+const props = defineProps<{
+    todo_id: number
+}>()
 
 function note () {
-    $q.dialog({
-        component: SelectNoteModalVue
+    modalStack.push(SelectNoteModalVue, {}, true, (canceled, [selectedId]) => {
+        if (canceled || selectedId === undefined) {
+            return emit('closeModal', true)
+        } 
+
+        Link({kind: 'Todo', id: props.todo_id}, {kind: 'Note', id: selectedId})
+        return emit('closeModal', true)
     })
-    .onOk(onDialogOK)
-    .onCancel(onDialogCancel)
 }
 
 function event () {
-    $q.dialog({
-        component: SelectEventModalVue
-    })
-    .onOk(onDialogOK)
-    .onCancel(onDialogCancel)
 }
+
+onMounted(() => {})
 
 </script>
 
 <template>
-    <QDialog ref="dialogRef">
-        <QCard style="padding: 10px;">
-            <h6>Link to what?</h6>
-            <QBtnGroup>
-                <QBtn color="primary" @click="note">Note</QBtn>
-                <QBtn color="primary" @click="event">Event</QBtn>
-            </QBtnGroup>
-        </QCard>
-    </QDialog>
+    <QCard style="padding: 10px;">
+        <h6>Link to what?</h6>
+        <QBtnGroup>
+            <QBtn color="primary" @click="note">Note</QBtn>
+            <QBtn color="primary" @click="event">Event</QBtn>
+        </QBtnGroup>
+    </QCard>
 </template>

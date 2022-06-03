@@ -16,7 +16,9 @@
     "lodash": "^4.17.21",
     "pinia": "^2.0.11",
     "quasar": "^2.6.4",
+    "v-calendar": "^3.0.0-alpha.8",
     "vue": "^3.2.31",
+    "vue-cal": "^4.2.0",
     "vue-router": "^4.0.12"
   },
   "devDependencies": {

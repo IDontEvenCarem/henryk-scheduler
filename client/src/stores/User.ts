@@ -73,7 +73,10 @@ export const useUserStore = defineStore({
                     this.token = savedToken
                     console.log(res)
                 })
-                .catch(err => alert("You were logged out, as the authorization server has been updated"))
+                .catch(err => {
+                    alert("You were logged out, as the authorization server has been updated")
+                    this.logOut()
+                })
             }
         }
     }

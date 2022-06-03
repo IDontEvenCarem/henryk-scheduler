@@ -1,5 +1,7 @@
 import { defineStore } from "pinia";
-import type {Component, ComponentOptions, ObjectEmitsOptions} from 'vue'
+import type {Component, ConcreteComponent, ComponentOptions, FunctionalComponent, ObjectEmitsOptions, VNodeProps} from 'vue'
+import type LinkFromTodoModalVue from '@/components/Modals/LinkFromTodoModal.vue'
+import type YesNoModal from '@/components/Modals/YesNoModal.vue'
 
 interface Modal {
     component: Component,
@@ -9,7 +11,8 @@ interface Modal {
     idx: number
 }
 
-type PropsOf<T> = T extends ComponentOptions<infer P> ? P : never
+type PropsOf<T> = T extends new (...args: any[]) => any ? Omit<InstanceType<T>['$props'], keyof VNodeProps | 'class' | 'style'> : any;
+type EmitsOf<T> = T extends new (...args: any[]) => any ? InstanceType<T>['$emit'] : any;
 type EventOptionsOf<T> = T extends ComponentOptions<any, any, any, any, any, any, any, infer E> ? (E extends (Record<string, ((...args: any[]) => void) | null>) ? E : never) : never
 type EventPayloadTypesByName<T extends Record<string, ((...args: any[]) => void) | null>> = {[P in keyof T]: T[P] extends (...args: infer P)=>void ? P : never}
 type EventPayloadsOf<T extends ObjectEmitsOptions> = EventPayloadTypesByName<EventOptionsOf<T>>[keyof EventPayloadTypesByName<EventOptionsOf<T>>]

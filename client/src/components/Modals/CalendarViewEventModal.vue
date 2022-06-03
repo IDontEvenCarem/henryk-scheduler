@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { MakeDeleted } from '@/common';
-import { AlterOneshotEvent, AlterRepeatingEvent, type AnyEvent, type OneshotEvent, type RepeatingEvent } from '@/database';
+import { AlterOneshotEvent, AlterRepeatingEvent, type AnyEvent, type ID, type OneshotEvent, type RepeatingEvent } from '@/database';
 import { EZModalYesNo } from '@/ezmodals';
 import {QCard, QLayout, QHeader, QToolbar, QToolbarTitle, QPageContainer, QPage, QBtn, date} from 'quasar'
 
 const props = defineProps<{
-    event: AnyEvent
+    event_id: ID
 }>()
 
 const emit = defineEmits<{

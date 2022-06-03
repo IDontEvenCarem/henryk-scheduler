@@ -2,13 +2,16 @@
 import {useQuasar ,QTree, QBtn, QCheckbox, QIcon, QCard, QScrollArea} from 'quasar'
 import {dynamicQuery, database} from '@/dbintegration'
 import { computed } from '@vue/reactivity';
-import { type Todo, AddTodo, ToggleTodo, DeleteTodo} from '@/database';
-import {ref, watchEffect} from 'vue'
+import { type Todo, AddTodo, ToggleTodo, DeleteTodo, Link, Delete} from '@/database';
+import {ref, watchEffect, type ComponentOptions} from 'vue'
 import type {Ref} from 'vue'
 import CreateTodoQModalVue from './Modals/CreateTodoQModal.vue';
 import { EZModalYesNo } from '@/ezmodals';
 import LinkFromTodoModalVue from './Modals/LinkFromTodoModal.vue';
+import { useModalStack } from '@/stores/ModalStack';
+import LinkModalVue from './Modals/LinkModal.vue';
 
+const modalStack = useModalStack()
 const $q = useQuasar()
 const todos = dynamicQuery(database.todos, [], table => table.toCollection())
 
@@ -32,6 +35,7 @@ watchEffect(() => {
             idmap.set(own, []);
         }
     }
+
     todos.value.forEach(todo => {
         insert_ids(todo.id!, todo.parent_id)
     })
@@ -44,27 +48,23 @@ watchEffect(() => {
 
     // step three - add linked entities
     async function insert_links (treeEntry : Todo & {children: any[]}) {
-        const linked_notes = await database.link_todo_notes.where('todo_id').equals(treeEntry.id!).toArray()
-        const local = Promise.all(linked_notes.map(link => database.notes.where('id').equals(link.note_id).toArray()))
-        const child = Promise.all((treeEntry.children||[]).map(insert_links))
-        if (treeEntry.children) treeEntry.children.unshift(...(await local).map(v => ({...v[0], body: 'note', header: 'note'})))
-        await child
+        // const linked_notes = await database.link_todo_notes.where('todo_id').equals(treeEntry.id!).toArray()
+        // const local = Promise.all(linked_notes.map(link => database.notes.where('id').equals(link.note_id).toArray()))
+        // const child = Promise.all((treeEntry.children||[]).map(insert_links))
+        // if (treeEntry.children) treeEntry.children.unshift(...(await local).map(v =>
+            // ({...v[0], id: 'n' + v[0].id, body: 'note', header: 'note'})))
+        // await child
     }
 
     Promise.all(roots.map(root => insert_links(root))).then(_ => {
         tree.value = roots
+        console.dir(roots)
     })
 })
 
 const checked = computed(() => {
     return todos.value.filter(todo => todo.done).map(todo => todo.id)
 })
-
-async function make_test_data () {
-    const tltd = await AddTodo("Top-Level Todo")
-    const subtd = await AddTodo("Sub Todo", tltd)
-    const subsubtd = await AddTodo("Even Suber Todo", subtd)
-}
 
 function change_done (id: number, value: any) {
     ToggleTodo(id)
@@ -89,19 +89,12 @@ function add_under(id: number) {
 }
 
 function link(id: number) {
-    $q.dialog({
-        component: LinkFromTodoModalVue,
-        componentProps: {
-            todo_id: id
-        }
-    }).onOk(payload => {
-        database.link_todo_notes.add({note_id: payload, todo_id: id})
-    })
+    modalStack.push(LinkModalVue as ComponentOptions, {from: {kind: 'Todo', id}}, true, (canceled, res) => {})
 }
 
 async function remove(id: number) {
     if (await EZModalYesNo("Are you sure?", "Do you want to delete this todo?")) {
-        DeleteTodo(id)
+        Delete({kind: 'Todo', id})
     }
 }
 
