@@ -132,7 +132,7 @@ onMounted(() => {
     addComponent(NoteListWindowVue)
     // addComponent(CalendarVue)
     addComponent(CalendarWindowVue)
-    // addComponent(DebugVue)
+    addComponent(DebugVue)
 })
 
 function loggg () {

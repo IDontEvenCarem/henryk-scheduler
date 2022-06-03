@@ -47,7 +47,7 @@ export interface Note {
     editedAt: string
 }
 
-type AnyThing = Note | RepeatingEvent | OneshotEvent | Todo
+export type AnyThing = Note | RepeatingEvent | OneshotEvent | Todo
 export type ReplacedID<T> = Omit<T, 'id'> & {id: ID}
 
 export interface Link {

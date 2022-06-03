@@ -7,6 +7,7 @@ import type { Todo } from '@/dbintegration';
 import { QIcon, QCheckbox, QBtn, QBtnGroup, QScrollArea} from 'quasar'
 import { EZModalLink } from '@/ezmodals'
 import { AddComponentAfterFocusedKey } from '@/injections'
+import LinksView from '@/components/LinksView.vue'
 
 const props = defineProps<{
     id: number,
@@ -93,27 +94,6 @@ function OpenScheduledEvent(id: ID) {
             <div v-html="note?.content || 'No content'"></div>
             <hr>
             <div>
-                <p><strong>Links:</strong> <strong v-if="links.length === 0">None yet</strong></p>
-                <div v-for="link in links" :key="link.id.toString()">
-                    <div v-if="link.id.kind === 'Todo'">
-                        {{(link as ReplacedID<Todo>).done}}
-                    </div>
-                    <div v-else-if="link.id.kind === 'Note'">
-                        <strong @click="OpenNote(link.id)">{{(link as ReplacedID<Note>).title}}</strong>
-                    </div>
-                    <div v-else-if="link.id.kind === 'OneshotEvent'">
-                        Event
-                        <strong @click="OpenOneshotEvent(link.id)">
-                            {{(link as ReplacedID<OneshotEvent>).name}}
-                        </strong>
-                    </div>
-                    <div v-else-if="link.id.kind === 'ScheduleEvent'">
-                        Event
-                        <strong @click="OpenScheduledEvent(link.id)">
-                            {{(link as ReplacedID<OneshotEvent>).name}}
-                        </strong>
-                    </div>
-                </div>
                 <QBtnGroup flat>
                     <QBtn flat color="primary" @click="AddLink">Add Link</QBtn>
                     <QBtn flat color="primary">Edit</QBtn>
@@ -121,6 +101,7 @@ function OpenScheduledEvent(id: ID) {
                 </QBtnGroup>
             </div>
         </div>
+        <LinksView :links="links"></LinksView>
     </QScrollArea>
 </template>
 
