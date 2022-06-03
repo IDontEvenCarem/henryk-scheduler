@@ -1,19 +1,26 @@
 <script setup lang="ts">
 import { GoldenLayout, LayoutManager } from 'golden-layout'
 import type { ComponentItem } from 'golden-layout'
-import { markRaw, onMounted, provide, ref, type Ref } from 'vue';
+import { inject, markRaw, onMounted, provide, ref, type Ref } from 'vue';
 import type { Component } from 'vue';
 import TodosWidgetVue from './components/TodosWidget.vue';
 import NoteListVue from './components/NoteList.vue'
 import CalendarVue from './components/Calendar.vue';
 import ModalStackDisplay from './components/ModalStackDisplay.vue';
-import {InsertAfterThisKey, AddComponentAfterFocusedKey, CloseFocusedWindowKey} from '@/injections'
-import { QBtn, QToolbar, QToolbarTitle, QLayout, QHeader, QPage, QPageContainer, QFooter } from 'quasar';
+import {InsertAfterThisKey, AddComponentAfterFocusedKey} from '@/injections'
+import { QBtn, QToolbar, QToolbarTitle, QLayout, QHeader, QPage, QPageContainer, QFooter, QMenu, QItem,QItemSection, QIcon } from 'quasar';
 import DebugVue from './components/Windows/Debug.vue';
 import NoteListWindowVue from './components/Windows/NoteListWindow.vue';
 import CalendarWindowVue from './components/Windows/CalendarWindow.vue';
+import { useModalStack } from './stores/ModalStack';
+import LoginModalVue from './components/Modals/LoginModal.vue';
+import RegisterModalVue from './components/Modals/RegisterModal.vue';
+import { result } from 'lodash';
+
 // import HelloWorldVue from './components/HelloWorld.vue';
 // import TheWelcomeVue from './components/TheWelcome.vue';
+
+const dark = inject("dark", false);
 
 const host = ref<HTMLElement | undefined>(undefined)
 const page = ref<any>(undefined)
@@ -25,6 +32,7 @@ const glhr = ref<GoldenLayout | undefined>(undefined)
 const elements : Ref<[any, bigint, object, LayoutManager.Location | undefined][]> = ref([])
 const fnInsertIntoGL = ref<undefined | ((state: object & {idx: bigint}) => LayoutManager.Location)>(undefined)
 const fnInsertAfterFocused = ref<undefined | ((state: object & {idx: bigint}, focus?: boolean) => LayoutManager.Location | undefined)>(undefined)
+const modalStack = useModalStack()
 
 provide(AddComponentAfterFocusedKey, addComponentAfterSelected)
 provide(CloseFocusedWindowKey, closeFocusedComponent)
@@ -166,17 +174,46 @@ window.addEventListener("resize", ev => {
   console.log('resize window')
   computeResize()
 })
+
+function openLoginModal()
+{
+  modalStack.push(LoginModalVue, {}, true, (canceled, result) => {})
+}
+
+function openRegisterModal()
+{
+  modalStack.push(RegisterModalVue, {}, true, (canceled, result) => {})
+}
 </script>
 
 <template>
   <ModalStackDisplay></ModalStackDisplay>
-  <QLayout view="hHh lpr fFf" @resize="computeResize">
-    <QHeader ref="head">
-      <QToolbar>
+  <QLayout dark view="hHh lpr fFf" @resize="computeResize">
+    <QHeader class="header" dark ref="head">
+      <QToolbar dark>
         <QToolbarTitle>Henryk</QToolbarTitle>
         <QBtn flat @click="addComponent(NoteListWindowVue)">Notes</QBtn>
         <QBtn flat @click="addComponent(TodosWidgetVue)">Todos</QBtn>
         <QBtn flat @click="addComponent(CalendarVue)">Calendar</QBtn>
+        <!-- <QBtn flat @click="openLoginModal">Login</QBtn> -->
+        <!-- <QBtn flat @click="openRegisterModal">Register</QBtn> -->
+
+        <QBtn flat >
+          <QIcon name="settings"></QIcon>
+          <QMenu :dark="dark" fit anchor="bottom left" self="top left">
+            <QItem clickable>
+              <QItemSection class="text-center" @click="openLoginModal">
+                LOGIN
+              </QItemSection>
+            </QItem>
+            <QItem clickable>
+              <QItemSection class="text-center" @click="openRegisterModal">
+                REGISTER
+              </QItemSection>
+            </QItem>
+          </QMenu>
+        </QBtn>
+
       </QToolbar>
     </QHeader>
     <QPageContainer>
@@ -200,6 +237,13 @@ window.addEventListener("resize", ev => {
 </template>
 
 <style>
+
+@media (prefers-color-scheme: dark) {
+  .header{
+    background-color: #333;
+  }
+}
+
 html,body {
     overflow: hidden;
 }
@@ -222,10 +266,7 @@ html,body {
 .background-alternative > * {
   grid-area: 2/2/3/3;
 }
-.header {
-  background-color: blue;
-  height: 100px;
-}
+
 .host {
   width: 100%;
   height: 100%;

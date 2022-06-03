@@ -11,10 +11,15 @@ import 'v-calendar/dist/style.css'
 
 import App from './App.vue'
 
+let dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+
 const app = createApp(App)
+
+app.provide("dark", dark)
 
 app.use(createPinia())
 app.use(Quasar, {
     plugins: {Dialog}
 })
+
 app.mount('#app')
