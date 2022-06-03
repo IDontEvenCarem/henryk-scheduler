@@ -7,7 +7,7 @@ import TodosWidgetVue from './components/TodosWidget.vue';
 import NoteListVue from './components/NoteList.vue'
 import CalendarVue from './components/Calendar.vue';
 import ModalStackDisplay from './components/ModalStackDisplay.vue';
-import {InsertAfterThisKey, AddComponentAfterFocusedKey} from '@/injections'
+import {InsertAfterThisKey, AddComponentAfterFocusedKey, CloseFocusedWindowKey} from '@/injections'
 import { QBtn, QToolbar, QToolbarTitle, QLayout, QHeader, QPage, QPageContainer, QFooter, QMenu, QItem,QItemSection, QIcon } from 'quasar';
 import DebugVue from './components/Windows/Debug.vue';
 import NoteListWindowVue from './components/Windows/NoteListWindow.vue';
