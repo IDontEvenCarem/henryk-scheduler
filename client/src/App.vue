@@ -9,10 +9,14 @@ import CalendarVue from './components/Calendar.vue';
 import ModalStackDisplay from './components/ModalStackDisplay.vue';
 import {InsertAfterThisKey, AddComponentAfterFocusedKey} from '@/injections'
 import { QBtn, QToolbar, QToolbarTitle, QLayout, QHeader, QPage, QPageContainer, QFooter, QMenu, QItem,QItemSection, QIcon } from 'quasar';
+import DebugVue from './components/Windows/Debug.vue';
+import NoteListWindowVue from './components/Windows/NoteListWindow.vue';
+import CalendarWindowVue from './components/Windows/CalendarWindow.vue';
 import { useModalStack } from './stores/ModalStack';
 import LoginModalVue from './components/Modals/LoginModal.vue';
 import RegisterModalVue from './components/Modals/RegisterModal.vue';
 import { result } from 'lodash';
+
 // import HelloWorldVue from './components/HelloWorld.vue';
 // import TheWelcomeVue from './components/TheWelcome.vue';
 
@@ -31,6 +35,7 @@ const fnInsertAfterFocused = ref<undefined | ((state: object & {idx: bigint}, fo
 const modalStack = useModalStack()
 
 provide(AddComponentAfterFocusedKey, addComponentAfterSelected)
+provide(CloseFocusedWindowKey, closeFocusedComponent)
 
 function addComponent (component: Component, extras: object = {}) {
   requestAnimationFrame(() => {    
@@ -59,6 +64,10 @@ function addComponentAfterSelected (component: Component, props: object = {}) {
       return selfidx
     }
   })
+}
+
+function closeFocusedComponent () {
+  glhr.value?.focusedComponentItem?.close();
 }
 
 function removeComponent (idx: bigint) {
@@ -115,12 +124,23 @@ onMounted(() => {
   ready.value = true
   // @ts-ignore
   glhr.value = glhost
+
+  glhost.addEventListener('resize', () => {
+    console.log("resize triggered")
+  })
+
+  glhost.addEventListener('itemDropped', ev => {
+    ev.element.style.setProperty('--gl-width', ev.element.style.width)
+    ev.element.style.setProperty('--gl-height', ev.element.style.height)
+  })
 })
 
 onMounted(() => {
     addComponent(TodosWidgetVue)
-    addComponent(NoteListVue)
-    addComponent(CalendarVue)
+    addComponent(NoteListWindowVue)
+    // addComponent(CalendarVue)
+    addComponent(CalendarWindowVue)
+    addComponent(DebugVue)
 })
 
 function loggg () {
@@ -142,6 +162,11 @@ function computeResize (size?: {width: number, height: number}) {
     const gsbr = host.value!.getBoundingClientRect()
     glhr.value?.setSize(gsbr.width, window.innerHeight - host.value!.getBoundingClientRect().top)
     glhr.value?.updateRootSize(true)
+    document.querySelectorAll(".lm_items").forEach(elem => {
+      const helem = (elem as HTMLElement)
+      helem.style.setProperty('--gl-width', helem.style.width)
+      helem.style.setProperty('--gl-height', helem.style.height)
+    })
   }
 }
 
@@ -167,7 +192,7 @@ function openRegisterModal()
     <QHeader class="header" dark ref="head">
       <QToolbar dark>
         <QToolbarTitle>Henryk</QToolbarTitle>
-        <QBtn flat @click="addComponent(NoteListVue)">Notes</QBtn>
+        <QBtn flat @click="addComponent(NoteListWindowVue)">Notes</QBtn>
         <QBtn flat @click="addComponent(TodosWidgetVue)">Todos</QBtn>
         <QBtn flat @click="addComponent(CalendarVue)">Calendar</QBtn>
         <!-- <QBtn flat @click="openLoginModal">Login</QBtn> -->
