@@ -1,7 +1,7 @@
 import Dexie from 'dexie'
 import type {Table} from 'dexie'
 import type { Change } from './common'
-import _ from 'lodash'
+import _, { map } from 'lodash'
 
 export type ThingName = "ScheduleEvent" | "OneshotEvent" | "Todo" | "Note";
 export type AnyEvent = OneshotEvent | RepeatingEvent
@@ -66,8 +66,8 @@ export class TypedDexie extends Dexie {
 
     constructor() {
         super('testdexie')
-        this.version(20).stores({
-            todos: '++id',
+        this.version(21).stores({
+            todos: '++id, parent_id',
             oneshot_events: '++id, start, end',
             repeating_events: '++id, weekday, repeats_start, repeats_end',
             notes: '++id, title',
@@ -182,20 +182,24 @@ export async function AddNote (title: string, content: string) {
 
 export async function Delete (id: ID) {
     if (id.kind === 'Todo') {
-        return database.todos.delete(id.id)
+        await database.todos.delete(id.id)
     }
     else if (id.kind === 'Note') {
-        return database.notes.delete(id.id)
+        await database.notes.delete(id.id)
     }
     else if (id.kind === 'OneshotEvent') {
-        return database.oneshot_events.delete(id.id)
+        await database.oneshot_events.delete(id.id)
     }
     else if (id.kind === 'ScheduleEvent') {
-        return database.repeating_events.delete(id.id)
+        await database.repeating_events.delete(id.id)
     }
     else {
         throw new Error("Invalid deletion case - improper kind in id")
     }
+
+    await database.link.filter(link => {
+        return (link.from === id.kind && link.from_id === id.id) || (link.to === id.kind && link.to_id === id.id)
+    }).delete()
 }
 
 export async function Get (id: ID) {
@@ -249,4 +253,98 @@ export async function GetWithLinks (id: ID, exclusions: ID[] = []) {
         value: direct,
         linked: [...entities_incomming, ...entities_outgoing]
     }
+}
+
+function IDtoString (id: ID) {
+    return `${id.kind[0]}${id.id}`
+}
+
+function StringToID (str: string): ID {
+    const kind_letter = str[0]
+    const num_id = parseInt(str.substring(1))
+
+    const kind : ThingName = {'N': 'Note', 'T': 'Todo', 'S': 'ScheduleEvent', 'O': 'OneshotEvent'}[kind_letter]! as ThingName
+
+    return {kind, id: num_id}
+}
+
+export async function GetExportData () {
+    const [oe, se, n, t, l] = await Promise.all([
+        database.oneshot_events.toArray(),
+        database.repeating_events.toArray(),
+        database.notes.toArray(),
+        database.todos.toArray(),
+        database.link.toArray()
+    ]);
+
+    const start_id_oe = _.minBy(oe, v => v.id!)?.id!
+    const start_id_se = _.minBy(se, v => v.id!)?.id!
+    const start_id_n  = _.minBy(n, v => v.id!)?.id!
+    const start_id_t  = _.minBy(t, v => v.id!)?.id!
+
+    oe.forEach(v => v.id! -= start_id_oe)
+    se.forEach(v => v.id! -= start_id_se)
+    n.forEach(v => v.id! -= start_id_n)
+    t.forEach(v => v.id! -= start_id_t)
+    
+    const subtable : Record<ThingName, number> = {'Note': start_id_n, 'OneshotEvent': start_id_oe, 'ScheduleEvent': start_id_se, 'Todo': start_id_t}
+    l.forEach(l => {
+        l.from_id -= subtable[l.from]
+        l.to_id -= subtable[l.to]
+    })
+
+    return {oneshot_events: oe, schedule_events: se, notes: n, todos: t, links: l}
+}
+
+export async function PurgeDatabase () {
+    if (prompt(`Are you sure? Type in "Yes" to purge the local database`) === 'Yes') {
+        await database.link.clear()
+        await database.notes.clear()
+        await database.todos.clear()
+        await database.repeating_events.clear()
+        await database.oneshot_events.clear()
+    } else {
+        return Promise.reject("Action aborted")
+    }
+}
+
+export async function ImportData (data: Awaited<ReturnType<typeof GetExportData>>) {
+    const todo_max_id = (await database.todos.toArray()).map(todo => todo.id!).reduce<number>((m, curr) => Math.max(m, curr), 0)
+    const notes_max_id = (await database.notes.toArray()).map(todo => todo.id!).reduce<number>((m, curr) => Math.max(m, curr), 0)
+    const ose_max_id = (await database.oneshot_events.toArray()).map(todo => todo.id!).reduce<number>((m, curr) => Math.max(m, curr), 0)
+    const re_max_id = (await database.repeating_events.toArray()).map(todo => todo.id!).reduce<number>((m, curr) => Math.max(m, curr), 0)
+
+    const todo_id_map = new Map(data.todos.map((todo, i) => [todo.id!, todo_max_id+1+i]))
+    const notes_id_map = new Map(data.notes.map((todo, i) => [todo.id!, notes_max_id+1+i]))
+    const ose_id_map = new Map(data.oneshot_events.map((todo, i) => [todo.id!, ose_max_id+1+i]))
+    const re_id_map = new Map(data.schedule_events.map((todo, i) => [todo.id!, re_max_id+1+i]))
+
+    await database.todos.bulkAdd(data.todos.map(todo => ({...todo, id: todo_id_map.get(todo.id!)!})))
+    await database.notes.bulkAdd(data.notes.map(note => ({...note, id: notes_id_map.get(note.id!)!})))
+    await database.oneshot_events.bulkAdd(data.oneshot_events.map(ose => ({...ose, id: ose_id_map.get(ose.id!)!})))
+    await database.repeating_events.bulkAdd(data.schedule_events.map(re => ({...re, id: re_id_map.get(re.id!)!})))
+
+    function map_id (kind: ThingName, id: number) {
+        const map = (()=>{
+            if (kind === 'Note') {
+                return notes_id_map
+            } else if (kind === 'OneshotEvent') {
+                return ose_id_map
+            } else if (kind === 'ScheduleEvent') {
+                return re_id_map
+            } else if (kind === 'Todo') {
+                return todo_id_map
+            }
+        })()
+        return map!.get(id)!
+    }
+
+    await database.link.bulkAdd(data.links.map(link => {
+        return {
+            from: link.from,
+            to: link.to,
+            from_id: map_id(link.from, link.from_id),
+            to_id: map_id(link.to, link.to_id)
+        }
+    }))
 }

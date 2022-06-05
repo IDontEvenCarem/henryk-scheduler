@@ -8,6 +8,7 @@ import { QIcon, QCheckbox, QBtn, QBtnGroup, QScrollArea} from 'quasar'
 import { EZModalLink } from '@/ezmodals'
 import { AddComponentAfterFocusedKey } from '@/injections'
 import LinksView from '@/components/LinksView.vue'
+import DeleteButton from '../DeleteButton.vue'
 
 const props = defineProps<{
     id: number,
@@ -96,8 +97,7 @@ function OpenScheduledEvent(id: ID) {
             <div>
                 <QBtnGroup flat>
                     <QBtn flat color="primary" @click="AddLink">Link</QBtn>
-                    <!-- <QBtn flat color="primary">Edit</QBtn> -->
-                    <QBtn flat color="negative">Delete</QBtn>
+                    <DeleteButton :id="{kind: 'Note', id: props.id}"></DeleteButton>
                 </QBtnGroup>
             </div>
         </div>

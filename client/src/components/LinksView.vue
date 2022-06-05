@@ -6,6 +6,7 @@ import type { Ref } from 'vue'
 import { AddComponentAfterFocusedKey } from '@/injections';
 import EventViewWindowVue from './Windows/EventViewWindow.vue';
 import NoteDisplayVue from './Windows/NoteDisplay.vue';
+import TodoViewWindowVue from './Windows/TodoViewWindow.vue';
 
 const props = defineProps<{
     links: ReplacedID<AnyThing>[]
@@ -31,7 +32,7 @@ function open_note (id: ID) {
 }
 
 function open_todo (id: ID) {
-    // iat!()
+    iat!(TodoViewWindowVue, {id: id.id})
 }
 
 

@@ -7,6 +7,7 @@ import { onMounted, ref, type Ref } from 'vue';
 import LinksView from '../LinksView.vue';
 import { QBtnGroup, QBtn } from 'quasar'
 import { EZModalLink, EZModalYesNo } from '@/ezmodals';
+import DeleteButton from '../DeleteButton.vue'
 
 const props = defineProps<{
     setTitle: (title: string) => void,
@@ -40,13 +41,6 @@ function link () {
     EZModalLink(props.id)
 }
 
-function prompt_delete () {
-    EZModalYesNo("Are you sure?", "Do you want to delete this event?").then(res => {
-        if (res) {
-            // TODO: Delete the damned thing
-        }
-    })
-}
 
 </script>
 
@@ -77,7 +71,7 @@ function prompt_delete () {
                 <QBtnGroup flat>
                     <!-- <QBtn flat color="primary">Edit</QBtn> -->
                     <QBtn flat color="primary" @click="link">Link</QBtn>
-                    <QBtn flat color="negative" @click="prompt_delete">Delete</QBtn>
+                    <DeleteButton :id="props.id"></DeleteButton>
                 </QBtnGroup>
             </div>
             <LinksView :links="linked"></LinksView>

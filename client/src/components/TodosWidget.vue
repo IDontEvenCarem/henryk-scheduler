@@ -3,17 +3,21 @@ import {useQuasar ,QTree, QBtn, QCheckbox, QIcon, QCard, QScrollArea} from 'quas
 import {dynamicQuery, database} from '@/dbintegration'
 import { computed } from '@vue/reactivity';
 import { type Todo, AddTodo, ToggleTodo, DeleteTodo, Link, Delete} from '@/database';
-import {ref, watchEffect, type ComponentOptions} from 'vue'
+import {inject, ref, watchEffect, type ComponentOptions} from 'vue'
 import type {Ref} from 'vue'
 import CreateTodoQModalVue from './Modals/CreateTodoQModal.vue';
-import { EZModalYesNo } from '@/ezmodals';
+import { EZModalDelete, EZModalYesNo } from '@/ezmodals';
 import LinkFromTodoModalVue from './Modals/LinkFromTodoModal.vue';
 import { useModalStack } from '@/stores/ModalStack';
 import LinkModalVue from './Modals/LinkModal.vue';
+import { AddComponentAfterFocusedKey } from '@/injections';
+import TodoViewWindowVue from './Windows/TodoViewWindow.vue';
 
 const modalStack = useModalStack()
 const $q = useQuasar()
 const todos = dynamicQuery(database.todos, [], table => table.toCollection())
+const iat = inject(AddComponentAfterFocusedKey)
+
 
 const props = defineProps<{
     setTitle?: (title: string) => void
@@ -46,20 +50,7 @@ watchEffect(() => {
     }
     const roots = todos.value.filter(todo => todo.parent_id === undefined).map(todo => ({...todo, children: get_child_array(todo.id!)}))
 
-    // step three - add linked entities
-    async function insert_links (treeEntry : Todo & {children: any[]}) {
-        // const linked_notes = await database.link_todo_notes.where('todo_id').equals(treeEntry.id!).toArray()
-        // const local = Promise.all(linked_notes.map(link => database.notes.where('id').equals(link.note_id).toArray()))
-        // const child = Promise.all((treeEntry.children||[]).map(insert_links))
-        // if (treeEntry.children) treeEntry.children.unshift(...(await local).map(v =>
-            // ({...v[0], id: 'n' + v[0].id, body: 'note', header: 'note'})))
-        // await child
-    }
-
-    Promise.all(roots.map(root => insert_links(root))).then(_ => {
-        tree.value = roots
-        console.dir(roots)
-    })
+    tree.value = roots
 })
 
 const checked = computed(() => {
@@ -89,13 +80,15 @@ function add_under(id: number) {
 }
 
 function link(id: number) {
-    modalStack.push(LinkModalVue as ComponentOptions, {from: {kind: 'Todo', id}}, true, (canceled, res) => {})
+    modalStack.push(LinkModalVue as any, {from: {kind: 'Todo', id}}, true, (canceled, res) => {})
 }
 
 async function remove(id: number) {
-    if (await EZModalYesNo("Are you sure?", "Do you want to delete this todo?")) {
-        Delete({kind: 'Todo', id})
-    }
+    EZModalDelete({kind: 'Todo', id})
+}
+
+function view(id: number) {
+    iat!(TodoViewWindowVue, {id})
 }
 
 if (props.setTitle) {
@@ -113,6 +106,7 @@ if (props.setTitle) {
                         <div class="todo-wrapper">
                             <QCheckbox color="positive" :name="prop.node.id.toString()" :val="prop.node.id" :model-value="checked" @update:model-value="v => change_done(prop.node.id, v)"></QCheckbox>
                             <div>{{prop.node.text}}</div>
+                            <QIcon style="cursor: pointer;" name="visibility" @click.stop="e => view(prop.node.id)"/>
                             <QIcon style="cursor: pointer;" name="add" @click.stop="e => add_under(prop.node.id)"/>
                             <QIcon style="cursor: pointer;" name="add_link" @click.stop="e => link(prop.node.id)"/>
                             <QIcon style="cursor: pointer;" name="delete" @click.stop="e => remove(prop.node.id)"/>

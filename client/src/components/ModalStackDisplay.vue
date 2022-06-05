@@ -37,7 +37,7 @@ function pop(...args : any[]) {
     grid-template-areas: "only";
 }
 .modal-stack-root[gofront=true] {
-    z-index: 992100;
+    z-index: 2100;
 }
 .modal-stack-root:empty {
     z-index: -1;
@@ -86,4 +86,10 @@ function pop(...args : any[]) {
     transform: scale(1);
 }
 
+</style>
+
+<style>
+.q-menu[role=listbox] {
+    z-index: 100000;
+}
 </style>

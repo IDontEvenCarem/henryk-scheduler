@@ -43,7 +43,7 @@ function doRegister()
                  <input type="submit" value="Zarejestruj się">
             </div> -->
 
-            <button @click="" class="button" style="vertical-align:middle"><span>Register </span></button>
+            <button @click="doRegister" class="button" style="vertical-align:middle"><span>Register </span></button>
 
         </div>
     </div>

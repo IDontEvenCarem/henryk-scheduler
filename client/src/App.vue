@@ -1,21 +1,22 @@
 <script setup lang="ts">
 import { GoldenLayout, LayoutManager } from 'golden-layout'
 import type { ComponentItem } from 'golden-layout'
-import { inject, markRaw, onMounted, provide, ref, type Ref } from 'vue';
+import { inject, markRaw, onMounted, provide, ref, watch, type Ref } from 'vue';
 import type { Component } from 'vue';
 import TodosWidgetVue from './components/TodosWidget.vue';
-import NoteListVue from './components/NoteList.vue'
 import CalendarVue from './components/Calendar.vue';
 import ModalStackDisplay from './components/ModalStackDisplay.vue';
-import {InsertAfterThisKey, AddComponentAfterFocusedKey, CloseFocusedWindowKey} from '@/injections'
+import { AddComponentAfterFocusedKey, CloseFocusedWindowKey, RecOpenQueueKey} from '@/injections'
 import { QBtn, QToolbar, QToolbarTitle, QLayout, QHeader, QPage, QPageContainer, QFooter, QMenu, QItem,QItemSection, QIcon } from 'quasar';
-import DebugVue from './components/Windows/Debug.vue';
 import NoteListWindowVue from './components/Windows/NoteListWindow.vue';
 import CalendarWindowVue from './components/Windows/CalendarWindow.vue';
 import { useModalStack } from './stores/ModalStack';
 import LoginModalVue from './components/Modals/LoginModal.vue';
 import RegisterModalVue from './components/Modals/RegisterModal.vue';
-import { result } from 'lodash';
+import ExportModalVue from './components/Modals/ExportModal.vue';
+import { identity } from 'lodash';
+import ImportModalVue from './components/Modals/ImportModal.vue';
+import TodoViewWindowVue from './components/Windows/TodoViewWindow.vue';
 
 // import HelloWorldVue from './components/HelloWorld.vue';
 // import TheWelcomeVue from './components/TheWelcome.vue';
@@ -34,8 +35,28 @@ const fnInsertIntoGL = ref<undefined | ((state: object & {idx: bigint}) => Layou
 const fnInsertAfterFocused = ref<undefined | ((state: object & {idx: bigint}, focus?: boolean) => LayoutManager.Location | undefined)>(undefined)
 const modalStack = useModalStack()
 
+const recQueue : Ref<[string, object][]> = ref([])
+
 provide(AddComponentAfterFocusedKey, addComponentAfterSelected)
 provide(CloseFocusedWindowKey, closeFocusedComponent)
+provide(RecOpenQueueKey, recQueue)
+
+watch(recQueue, (v) => {
+  v.forEach(([thing, params]) => {
+    const component = (()=>{
+      if (thing === 'TodoViewWindow') {
+        return TodoViewWindowVue
+      }
+    })()
+
+    if (component !== undefined) {
+      addComponentAfterSelected(component, params)
+    }
+  })
+  if (v.length > 0) {
+    recQueue.value = []
+  }
+})
 
 function addComponent (component: Component, extras: object = {}) {
   requestAnimationFrame(() => {    
@@ -52,7 +73,6 @@ function addComponent (component: Component, extras: object = {}) {
 }
 
 function addComponentAfterSelected (component: Component, props: object = {}) {
-  console.log(component)
   requestAnimationFrame(() => {
     if (fnInsertAfterFocused.value !== undefined) {
       const selfidx = tphidx.value
@@ -140,12 +160,8 @@ onMounted(() => {
     addComponent(NoteListWindowVue)
     // addComponent(CalendarVue)
     addComponent(CalendarWindowVue)
-    addComponent(DebugVue)
+    // addComponent(DebugVue)
 })
-
-function loggg () {
-  window.console.log(glhr.value?.focusedComponentItem?.element)
-}
 
 function setTitle (location: LayoutManager.Location | undefined) {
   return function (title: string) {
@@ -177,26 +193,33 @@ window.addEventListener("resize", ev => {
 
 function openLoginModal()
 {
-  modalStack.push(LoginModalVue, {}, true, (canceled, result) => {})
+  modalStack.push(LoginModalVue as any, {}, true, (canceled, result) => {})
 }
 
 function openRegisterModal()
 {
-  modalStack.push(RegisterModalVue, {}, true, (canceled, result) => {})
+  modalStack.push(RegisterModalVue as any, {}, true, (canceled, result) => {})
 }
+
+function openExportModal () {
+  modalStack.push(ExportModalVue as any, [], true, () => {})
+}
+
+function openImportModal () {
+  modalStack.push(ImportModalVue as any, [], true, identity)
+}
+
 </script>
 
 <template>
   <ModalStackDisplay></ModalStackDisplay>
-  <QLayout dark view="hHh lpr fFf" @resize="computeResize">
-    <QHeader class="header" dark ref="head">
-      <QToolbar dark>
+  <QLayout view="hHh lpr fFf" @resize="computeResize">
+    <QHeader class="header" ref="head">
+      <QToolbar>
         <QToolbarTitle>Henryk</QToolbarTitle>
         <QBtn flat @click="addComponent(NoteListWindowVue)">Notes</QBtn>
         <QBtn flat @click="addComponent(TodosWidgetVue)">Todos</QBtn>
-        <QBtn flat @click="addComponent(CalendarVue)">Calendar</QBtn>
-        <!-- <QBtn flat @click="openLoginModal">Login</QBtn> -->
-        <!-- <QBtn flat @click="openRegisterModal">Register</QBtn> -->
+        <QBtn flat @click="addComponent(CalendarWindowVue)">Calendar</QBtn>
 
         <QBtn flat >
           <QIcon name="settings"></QIcon>
@@ -211,6 +234,16 @@ function openRegisterModal()
                 REGISTER
               </QItemSection>
             </QItem>
+            <QItem clickable>
+              <QItemSection class="text-center" @click="openExportModal">
+                EXPORT
+              </QItemSection>
+            </QItem>
+            <QItem clickable>
+              <QItemSection class="text-center" @click="openImportModal">
+                IMPORT
+              </QItemSection>
+            </QItem>
           </QMenu>
         </QBtn>
 
@@ -220,8 +253,7 @@ function openRegisterModal()
       <QPage ref="page">
         <div v-if="elements.length === 0" class="background-alternative">
           <div>
-            <h2 color="white">This should be hidden</h2>
-            <button>Open a tab</button>
+            <h2 color="white">You have no windows open</h2>
           </div>
         </div>
         <div class="host" ref="host"></div>

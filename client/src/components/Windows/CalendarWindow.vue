@@ -28,6 +28,7 @@ const start = ref(date.subtractFromDate(date.startOfDate(Date.now(), "day"), {da
 const end = ref(date.endOfDate(date.addToDate(date.startOfDate(Date.now(), "day"), {days: 7-date.getDayOfWeek(date.startOfDate(Date.now(), "day"))}), 'day'))
 
 const events = computed(() => {
+    (window as any)['dummy_global_variable'] = oneshot_events.value.length + repeating_events.value.length
     return [
         ...oneshot_events.value.filter(ev => date.isBetweenDates(ev.start, start.value, end.value)).map(ev => {
             const id : ID = {kind: 'OneshotEvent', id: ev.id!}
@@ -35,7 +36,8 @@ const events = computed(() => {
                 start: ev.start,
                 end: ev.end,
                 title: ev.name,
-                dbid: id
+                dbid: id,
+                color: ev.color
             }
         }),
         ...repeating_events.value.flatMap(r => {
@@ -68,7 +70,8 @@ const events = computed(() => {
                         end: event_end,
                         title: r.name,
                         eid: r.id!,
-                        dbid: id
+                        dbid: id,
+                        color: r.color
                     })
                 }
             }
@@ -84,7 +87,7 @@ function on_event_click(ev: any) {
 }
 
 function add_event () {
-    modalStack.push(CalendarCreateEventModalVue, {}, true, (canceled, result) => {
+    modalStack.push(CalendarCreateEventModalVue as any, {}, true, (canceled, result) => {
 
     })     
 }
@@ -105,7 +108,7 @@ function view_change(event: {startDate: Date, endDate: Date, firstCellDate: Date
 
 <style scoped>
 .calendar-wrapper {
-    width: var(--gl-width);
+    /* width: var(--gl-width); */
     height: var(--gl-height);
 }
 
